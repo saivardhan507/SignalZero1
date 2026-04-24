@@ -1106,7 +1106,7 @@ function HeroSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: false, amount: 0.3 }}
               transition={{ duration: 0.6, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="glass p-6 sm:p-7 transition-all duration-500 group relative overflow-hidden text-left"
+              className="glass p-6 sm:p-7 transition-all duration-500 group relative overflow-clip text-left"
             >
               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[var(--accent-glow)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               <div className="flex items-center gap-3 mb-4">
@@ -1318,7 +1318,7 @@ function OurProcessSection() {
       style={{ scale: sectionScale, opacity: sectionOpacity, y: sectionY }}
       className="py-10 sm:py-20 px-[20px] md:px-[60px]"
     >
-      <div className="glass rounded-[40px] px-5 py-10 md:p-[60px] border border-white/5 overflow-hidden mx-auto max-w-[1200px] w-full flex flex-col relative">
+      <div className="glass rounded-[40px] px-5 py-10 md:p-[60px] border border-white/5 overflow-clip mx-auto max-w-[1200px] w-full flex flex-col relative">
         
         {/* Header */}
         <div className="text-center mb-16 relative z-10 mx-auto max-w-2xl">
@@ -1564,8 +1564,8 @@ function CaseStudyCard({ cs, index }) {
     if (cs.chartType === '3d') {
       const currentModel = cs.models[activeModelIndex];
       return (
-        <div className="flex flex-col gap-6 w-full">
-          <div className="w-full relative">
+        <div className="flex flex-col gap-6 w-full h-[400px] lg:h-auto max-w-full">
+          <div className="w-full h-full relative">
             <ModelViewer
               src={currentModel.src}
               alt={currentModel.title}
@@ -1573,7 +1573,7 @@ function CaseStudyCard({ cs, index }) {
             />
           </div>
 
-          <div className="flex items-center justify-between glass py-4 px-7 rounded-2xl border border-white/5 shadow-2xl">
+          <div className="flex items-center justify-between glass py-4 px-7 rounded-2xl border border-white/5 shadow-2xl shrink-0">
             <div className="flex flex-col">
               <span className="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Current Visualization</span>
               <div className="flex items-center gap-2">
@@ -1603,9 +1603,9 @@ function CaseStudyCard({ cs, index }) {
     <motion.div
       ref={ref}
       style={{ x: xTransform, y: yParallax, opacity: opacity }}
-      className="glass rounded-2xl border border-white/5 overflow-hidden w-full relative z-10"
+      className="glass rounded-2xl border border-white/5 overflow-clip w-full relative z-10"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:min-h-[min(37.5rem,80vh)]">
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 lg:min-h-[min(37.5rem,80vh)]">
         {/* Content Panel */}
         <div className="p-6 sm:p-12 border-b lg:border-b-0 lg:border-r border-white/5 flex flex-col justify-center">
           <div className="flex items-center justify-between mb-8">
@@ -1737,10 +1737,10 @@ function FounderSection() {
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           className="w-full relative z-10"
         >
-          <div className="glass rounded-2xl border border-white/5 overflow-hidden">
+          <div className="glass rounded-2xl border border-white/5 overflow-clip">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
               {/* Photo */}
-              <div className="lg:col-span-2 relative overflow-hidden">
+              <div className="lg:col-span-2 relative overflow-clip">
                 <div className="aspect-square lg:aspect-auto lg:h-full relative">
                   <img src="/founder.png" alt="Eppa Sai Vardhan Reddy" className="w-full h-full object-cover object-top opacity-90 mix-blend-screen" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-elevated)] via-transparent to-transparent" />
@@ -1791,7 +1791,7 @@ function FounderSection() {
                   ))}
                 </div>
                 <div className="flex items-center gap-4">
-                  <a href="mailto:eppasaivardhanreddy@gmail.com" className="text-gray-400 hover:text-[var(--accent-primary)] transition-colors">
+                  <a href="mailto:contact@wearesignalzero.tech" className="text-gray-400 hover:text-[var(--accent-primary)] transition-colors">
                     <Mail className="w-5 h-5" />
                   </a>
                   <a href="https://www.linkedin.com/in/eppa-sai-vardhan-reddy-5b71213a4" className="text-gray-400 hover:text-[var(--accent-primary)] transition-colors">
@@ -2392,8 +2392,8 @@ function CookieBanner() {
                 <p><strong className="text-white">Cookie Usage:</strong> We use essential cookies for site functionality, analytics cookies to understand usage patterns, and optional marketing cookies for personalized experiences. You can control these through our cookie preferences.</p>
                 <p><strong className="text-white">Third-Party Services:</strong> We use Google Gemini AI for our chatbot assistant and Resend for email notifications. These services process data according to their respective privacy policies.</p>
                 <p><strong className="text-white">Data Storage:</strong> Your data is stored securely in our database with industry-standard encryption. We retain data only as long as necessary for business purposes.</p>
-                <p><strong className="text-white">Your Rights (GDPR):</strong> Under GDPR, you have the right to access, rectify, erase, restrict processing, and port your data. Contact us at eppasaivardhanreddy@gmail.com to exercise these rights.</p>
-                <p><strong className="text-white">Contact:</strong> Signal Zero, Hyderabad, India. Email: eppasaivardhanreddy@gmail.com</p>
+                <p><strong className="text-white">Your Rights (GDPR):</strong> Under GDPR, you have the right to access, rectify, erase, restrict processing, and port your data. Contact us at contact@wearesignalzero.tech to exercise these rights.</p>
+                <p><strong className="text-white">Contact:</strong> Signal Zero, Hyderabad, India. Email: contact@wearesignalzero.tech</p>
               </div>
             </motion.div>
           </motion.div>
@@ -2413,7 +2413,7 @@ function CookieBanner() {
                 <p><strong className="text-white">Company:</strong> Signal Zero</p>
                 <p><strong className="text-white">Founder & Owner:</strong> Eppa Sai Vardhan Reddy</p>
                 <p><strong className="text-white">Address:</strong> Hyderabad, Telangana, India</p>
-                <p><strong className="text-white">Email:</strong> eppasaivardhanreddy@gmail.com</p>
+                <p><strong className="text-white">Email:</strong> contact@wearesignalzero.tech</p>
                 <p><strong className="text-white">Phone:</strong> (+91) 9347302648</p>
                 <p><strong className="text-white">Service:</strong> AI & Data Engineering Consulting and Development</p>
               </div>
@@ -2443,7 +2443,7 @@ function Footer() {
               Engineering intelligent systems that transform raw data into competitive advantage. Premium AI & Data solutions for forward-thinking businesses.
             </p>
             <div className="flex items-center gap-4">
-              <a href="mailto:eppasaivardhanreddy@gmail.com" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Mail className="w-4 h-4" /></a>
+              <a href="mailto:contact@wearesignalzero.tech" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Mail className="w-4 h-4" /></a>
               <a href="https://www.linkedin.com/in/eppa-sai-vardhan-reddy-5b71213a4" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Linkedin className="w-4 h-4" /></a>
               <a href="#" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Globe className="w-4 h-4" /></a>
             </div>

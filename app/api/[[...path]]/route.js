@@ -126,8 +126,9 @@ async function handleCreateLead(request) {
         });
 
         const mailOptions = {
-          from: `"Signal Zero" <${process.env.GMAIL_USER}>`,
+          from: `"Signal Zero" <contact@wearesignalzero.tech>`,
           to: body.email,
+          replyTo: 'contact@wearesignalzero.tech',
           subject: 'Signal Zero - Inquiry Received',
           html: generateEmailTemplate(lead),
         };
