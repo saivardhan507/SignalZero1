@@ -18,10 +18,10 @@ Our Services:
 6. Cognitive Workflow Automation - AI-powered process automation, intelligent document processing
 
 Budget Tiers:
-- Under $5k: Consulting & Strategy sessions only
-- $5k-$10k: Single module or feature development
-- $10k-$25k: Full project development
-- $25k+: Enterprise-grade, multi-phase solutions
+- Under ₹30k: Consulting & Strategy sessions only
+- ₹30k-₹60k: Single module or feature development
+- ₹60k-₹3L: Full project development
+- ₹3L+: Enterprise-grade, multi-phase solutions
 
 Our Process: Discovery → Development → Deployment
 
