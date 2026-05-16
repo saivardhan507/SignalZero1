@@ -13,7 +13,8 @@ import {
   ExternalLink, Linkedin, Mail, Phone, MapPin,
   Shield, Check, Menu, Sparkles, Zap, Globe,
   Target, TrendingUp, Users, Award, BookOpen, Layers,
-  MousePointer, ArrowDown, Star, Box, Search, Rocket, CheckCircle
+  MousePointer, ArrowDown, Star, Box, Search, Rocket, CheckCircle,
+  Mic, MicOff, Volume2, VolumeX
 } from 'lucide-react';
 import ModelViewer from '@/components/LazyModelViewer';
 import {
@@ -2159,10 +2160,27 @@ function ChatWidget() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState('default');
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [ttsSupported, setTtsSupported] = useState(false);
+  const [micPermission, setMicPermission] = useState('unknown');
+  const [listening, setListening] = useState(false);
+  const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(true);
+  const [voiceVolume, setVoiceVolume] = useState(0.85);
+  const [pendingVoiceVolume, setPendingVoiceVolume] = useState(Math.round(0.85 * 100));
+  const [voiceError, setVoiceError] = useState('');
+  const draggingVolumeRef = useRef(false);
   useEffect(() => {
     setSessionId(`chat_${Date.now()}_${Math.random().toString(36).slice(2)}`);
   }, []);
   const scrollRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const sendMessageRef = useRef(null);
+  const lastSpokenMessageIndexRef = useRef(-1);
+  const finalTranscriptRef = useRef('');
+  const voiceSendLockedRef = useRef(false);
+  const currentUtteranceRef = useRef(null);
+  const lastCharIndexRef = useRef(0);
+  const currentUtteranceTextRef = useRef('');
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -2171,14 +2189,216 @@ function ChatWidget() {
   }, [messages]);
 
   useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setVoiceSupported(Boolean(SpeechRecognition));
+    setTtsSupported('speechSynthesis' in window);
+
+    const updateMicPermission = async () => {
+      try {
+        if (!navigator.permissions?.query) return;
+        const result = await navigator.permissions.query({ name: 'microphone' });
+        setMicPermission(result.state);
+        result.onchange = () => setMicPermission(result.state);
+      } catch (error) {
+        setMicPermission('unknown');
+      }
+    };
+
+    updateMicPermission();
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      finalTranscriptRef.current = '';
+      voiceSendLockedRef.current = false;
+      setVoiceError('');
+      setListening(true);
+      setInput('');
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      let finalTranscript = finalTranscriptRef.current;
+
+      for (let index = 0; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const resultText = result[0]?.transcript || '';
+        transcript += resultText;
+        if (result.isFinal) {
+          finalTranscript = transcript.trim();
+        }
+      }
+
+      const nextTranscript = (finalTranscript || transcript).trim();
+      if (nextTranscript) {
+        setInput(nextTranscript);
+      }
+
+      if (event.results[event.results.length - 1]?.isFinal) {
+        finalTranscriptRef.current = nextTranscript;
+      }
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+      finalTranscriptRef.current = '';
+      voiceSendLockedRef.current = true;
+      setVoiceError('Microphone access is blocked in this browser. Allow permission and try again.');
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+      const transcript = finalTranscriptRef.current.trim();
+
+      if (transcript && !voiceSendLockedRef.current) {
+        voiceSendLockedRef.current = true;
+        sendMessageRef.current?.(transcript);
+      }
+
+      finalTranscriptRef.current = '';
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!voiceRepliesEnabled && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [voiceRepliesEnabled]);
+
+  useEffect(() => {
+    if (open || !listening || !recognitionRef.current) return;
+
+    voiceSendLockedRef.current = true;
+    finalTranscriptRef.current = '';
+    recognitionRef.current.abort();
+  }, [open, listening]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !ttsSupported || !voiceRepliesEnabled) return;
+    if (loading) return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== 'model') return;
+
+    const lastMessageIndex = messages.length - 1;
+    if (lastSpokenMessageIndexRef.current === lastMessageIndex) return;
+
+    lastSpokenMessageIndexRef.current = lastMessageIndex;
+
+    // Cancel any ongoing speech and speak this message, tracking progress so volume changes can restart the remainder
+    window.speechSynthesis.cancel();
+
+    const speakFrom = (text, startChar = 0) => {
+      if (!text) return;
+      const utterance = new SpeechSynthesisUtterance(text.slice(startChar));
+      currentUtteranceRef.current = utterance;
+      currentUtteranceTextRef.current = text;
+      lastCharIndexRef.current = startChar;
+
+      utterance.lang = 'en-US';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        let pick = voices.find(v => /en-?us/i.test(v.lang)) || voices.find(v => /en/i.test(v.lang)) || voices[0];
+        if (pick) utterance.voice = pick;
+      } catch (e) {
+        /* ignore */
+      }
+      utterance.volume = voiceVolume;
+
+      // Update lastCharIndexRef on boundary events when available
+      utterance.onboundary = (ev) => {
+        if (ev && typeof ev.charIndex === 'number') {
+          // ev.charIndex is relative to the spoken utterance chunk; compute absolute index
+          lastCharIndexRef.current = startChar + ev.charIndex;
+        }
+      };
+
+      utterance.onend = () => {
+        currentUtteranceRef.current = null;
+        lastCharIndexRef.current = 0;
+        currentUtteranceTextRef.current = '';
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    speakFrom(lastMessage.text, 0);
+  }, [messages, loading, ttsSupported, voiceRepliesEnabled, voiceVolume]);
+
+  // If the user adjusts the volume while an utterance is playing, cancel and restart from last boundary
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const isSpeaking = window.speechSynthesis.speaking && currentUtteranceRef.current;
+    if (!isSpeaking) return;
+    // get remaining text and restart
+    const text = currentUtteranceTextRef.current || '';
+    const charIndex = lastCharIndexRef.current || 0;
+    window.speechSynthesis.cancel();
+    if (charIndex < text.length) {
+      // small debounce to avoid thrashing if slider rapidly moves
+      const id = setTimeout(() => {
+        const utter = new SpeechSynthesisUtterance(text.slice(charIndex));
+        currentUtteranceRef.current = utter;
+        utter.lang = 'en-US';
+        utter.rate = 1;
+        utter.pitch = 1;
+        try {
+          const voices = window.speechSynthesis.getVoices();
+          let pick = voices.find(v => /en-?us/i.test(v.lang)) || voices.find(v => /en/i.test(v.lang)) || voices[0];
+          if (pick) utter.voice = pick;
+        } catch (e) {}
+        utter.volume = voiceVolume;
+        utter.onboundary = (ev) => {
+          if (ev && typeof ev.charIndex === 'number') {
+            lastCharIndexRef.current = charIndex + ev.charIndex;
+          }
+        };
+        utter.onend = () => {
+          currentUtteranceRef.current = null;
+          lastCharIndexRef.current = 0;
+          currentUtteranceTextRef.current = '';
+        };
+        window.speechSynthesis.speak(utter);
+      }, 60);
+      return () => clearTimeout(id);
+    }
+  }, [voiceVolume]);
+
+  
+
+  useEffect(() => {
+    // keep pending slider in sync when voiceVolume changes programmatically
+    setPendingVoiceVolume(Math.round(voiceVolume * 100));
+
     if (open && messages.length === 0) {
       setMessages([{ role: 'model', text: 'Hey! I\'m Signal Zero\'s AI assistant. Ask me anything about our services, process, or how we can help with your project.' }]);
     }
   }, [open, messages.length]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
+  const sendMessage = useCallback(async (messageOverride) => {
+    const userMsg = (messageOverride ?? input).trim();
+    if (!userMsg || loading) return;
+
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
@@ -2199,6 +2419,35 @@ function ChatWidget() {
     } finally {
       setLoading(false);
     }
+  }, [input, loading, sessionId]);
+
+  const toggleVoiceInput = async () => {
+    if (!voiceSupported || !recognitionRef.current || loading) return;
+
+    if (listening) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      recognitionRef.current.start();
+    } catch (error) {
+      setListening(false);
+      setVoiceError(
+        error?.name === 'NotAllowedError' || micPermission === 'denied'
+          ? 'Microphone permission is blocked. Enable it in browser settings and try again.'
+          : 'Unable to start microphone. Please try again or check browser support.'
+      );
+    }
   };
 
   return (
@@ -2216,27 +2465,85 @@ function ChatWidget() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 18, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            exit={{ opacity: 0, y: 18, scale: 0.94 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] glass-strong rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)] origin-bottom-right glass-strong rounded-[28px] border border-white/10 overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[var(--accent-primary)]/10 to-[var(--accent-secondary)]/10 p-4 border-b border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-[var(--accent-primary)]" />
+            <div className="bg-gradient-to-r from-[var(--accent-primary)]/10 to-[var(--accent-secondary)]/10 px-4 py-3 border-b border-white/5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-[var(--accent-primary)]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white leading-none">Signal Zero AI</p>
+                    <p className="text-[11px] text-gray-400 mt-1 truncate">
+                      {voiceError
+                        ? voiceError
+                        : listening
+                          ? 'Listening'
+                          : micPermission === 'denied'
+                            ? 'Mic blocked'
+                            : 'Ask about our services'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Signal Zero AI</p>
-                  <p className="text-xs text-gray-400">Ask about our services</p>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={toggleVoiceInput}
+                    disabled={!voiceSupported || loading}
+                    title={voiceSupported ? (listening ? 'Stop listening' : 'Speak to Signal Zero AI') : 'Voice input not supported in this browser'}
+                    className={`h-9 w-9 rounded-full border border-white/10 ${listening ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                  >
+                    {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setVoiceRepliesEnabled(prev => !prev)}
+                    disabled={!ttsSupported}
+                    title={ttsSupported ? (voiceRepliesEnabled ? 'Turn off spoken responses' : 'Turn on spoken responses') : 'Speech synthesis not supported in this browser'}
+                    className={`h-9 w-9 rounded-full border border-white/10 ${voiceRepliesEnabled ? 'bg-white/5 text-[var(--accent-primary)]' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                  >
+                    {voiceRepliesEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </Button>
                 </div>
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <Volume2 className="w-4 h-4 text-gray-400 shrink-0" />
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={pendingVoiceVolume}
+                  onChange={(e) => setPendingVoiceVolume(Number(e.target.value))}
+                  onMouseDown={() => { draggingVolumeRef.current = true; }}
+                  onMouseUp={() => { draggingVolumeRef.current = false; setVoiceVolume(Number(pendingVoiceVolume) / 100); }}
+                  onTouchStart={() => { draggingVolumeRef.current = true; }}
+                  onTouchEnd={() => { draggingVolumeRef.current = false; setVoiceVolume(Number(pendingVoiceVolume) / 100); }}
+                  onBlur={() => { draggingVolumeRef.current = false; setVoiceVolume(Number(pendingVoiceVolume) / 100); }}
+                  onKeyUp={(e) => { if (e.key === 'Enter') setVoiceVolume(Number(pendingVoiceVolume) / 100); }}
+                  disabled={!ttsSupported || !voiceRepliesEnabled}
+                  className="flex-1 h-1 appearance-none bg-white/10 rounded-lg"
+                  aria-label="Voice volume"
+                />
+                <span className="w-10 text-right text-[11px] text-gray-400 tabular-nums">
+                  {Math.round(voiceVolume * 100)}%
+                </span>
+                
               </div>
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} className="h-[350px] overflow-y-auto p-4 space-y-3 chat-scroll">
+            <div ref={scrollRef} className="h-[280px] overflow-y-auto p-3 space-y-3 chat-scroll">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed ${msg.role === 'user'
@@ -2261,15 +2568,20 @@ function ChatWidget() {
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t border-white/5">
+            <div className="p-2.5 border-t border-white/5">
+              {voiceError && (
+                <p className="mb-2 px-1 text-[11px] leading-relaxed text-amber-300/90">
+                  {voiceError}
+                </p>
+              )}
               <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
                 <Input
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   placeholder="Ask about our services..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 text-sm flex-1 focus:border-[var(--accent-primary)]/50"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 text-sm flex-1 focus:border-[var(--accent-primary)]/50 h-9"
                 />
-                <Button type="submit" disabled={!input.trim() || loading} className="bg-[var(--accent-primary)] text-black hover:bg-[#00d4e0] px-3 disabled:opacity-30">
+                <Button type="submit" disabled={!input.trim() || loading} className="bg-[var(--accent-primary)] text-black hover:bg-[#00d4e0] px-3 disabled:opacity-30 h-9">
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
