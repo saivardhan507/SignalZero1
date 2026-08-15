@@ -15,7 +15,7 @@ import {
   Shield, Check, Menu, Sparkles, Zap, Globe,
   Target, TrendingUp, Users, Award, BookOpen, Layers,
   MousePointer, ArrowDown, Star, Box, Search, Rocket, CheckCircle,
-  Mic, MicOff, Volume2, VolumeX
+  Mic, MicOff, Volume2, VolumeX, HelpCircle, ChevronDown
 } from 'lucide-react';
 import ModelViewer from '@/components/LazyModelViewer';
 import {
@@ -748,6 +748,7 @@ function Navigation() {
     { label: 'SERVICES', href: '#services' },
     { label: 'CASE STUDIES', href: '#case-studies' },
     { label: 'FOUNDER', href: '#founder' },
+    { label: 'FAQ', href: '#faq' },
     { label: 'CONTACT', href: '#discovery' },
   ];
 
@@ -1852,6 +1853,114 @@ function FounderSection() {
   );
 }
 
+// ===== FAQ SECTION (GEO & AI SEARCH OPTIMIZED) =====
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState(0);
+
+  const faqs = [
+    {
+      q: "What is Signal Zero and how does the agency operate?",
+      a: "Signal Zero is an integrated AI and systems engineering agency that bridges the gap between raw data chaos and production-grade intelligent systems. We engineer custom AI agents, automated ETL pipelines, real-time analytics platforms, and full-stack software tailored for high-growth enterprises and startups.",
+      category: "Overview",
+    },
+    {
+      q: "What core AI & data engineering services do you provide?",
+      a: "We deliver 6 core engineering capabilities: (1) Custom AI Agents & RAG Pipelines with vector search, (2) Enterprise ETL & Streaming with Apache Spark and Kafka, (3) FinTech & Algorithmic Dashboards with sub-second latency, (4) Cognitive Workflow Automation (OCR/NLP), (5) Full-Stack Web Platforms (Next.js/React), and (6) Interactive 3D WebGL Visualization.",
+      category: "Services",
+    },
+    {
+      q: "What measurable performance benchmarks have you achieved?",
+      a: "Across 50+ delivered projects with a 100% delivery rate, we have achieved an 84% directional accuracy on real-time stock price prediction (<200ms response time), a 70% reduction in ETL data processing time unifying 12 disparate data sources with 99.8% data accuracy, and a 96% answer relevance rate indexing 10,000+ medical documents under HIPAA compliance.",
+      category: "Results",
+    },
+    {
+      q: "How does Signal Zero architect custom RAG (Retrieval-Augmented Generation) pipelines?",
+      a: "Our RAG architecture combines fine-tuned embeddings, secure vector databases (Pinecone/ChromaDB), multi-hop reasoning, and strict contextual guardrails. This eliminates AI hallucinations and enables conversational Q&A over massive proprietary document collections with 96%+ contextual accuracy.",
+      category: "Architecture",
+    },
+    {
+      q: "Who leads engineering at Signal Zero?",
+      a: "Signal Zero is founded and led by Chief Architect Eppa Sai Vardhan Reddy, a NASA Space Settlement World 2nd Prize awardee and published IEEE researcher (IEEE ICOECA 2024, IRJMETS 2025) with deep expertise in machine learning, deep learning, NLP, and distributed systems.",
+      category: "Leadership",
+    },
+    {
+      q: "How does the project engagement and discovery process work?",
+      a: "We follow a 6-step roadmap: (1) Ideation, (2) Scope & Roadmap Definition, (3) Interface Design, (4) Production Development, (5) Rigorous Testing, and (6) Long-term Support. Submitting our Project Discovery form initiates a technical review with a detailed architectural proposal delivered within 24 hours.",
+      category: "Process",
+    },
+  ];
+
+  return (
+    <section id="faq" className="py-32 sm:py-40 px-4 sm:px-6 relative border-t border-slate-200/80 dark:border-white/5 overflow-hidden">
+      <div className="max-w-5xl mx-auto relative z-10">
+        <AnimatedSection className="text-center mb-16">
+          <Badge variant="outline" className="mb-4 border-blue-200 dark:border-cyan-500/30 text-blue-700 dark:text-[#00ccff] bg-blue-50 dark:bg-cyan-500/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
+            <HelpCircle className="w-3.5 h-3.5 mr-2" /> KNOWLEDGE BASE & FAQ
+          </Badge>
+          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+            Frequently Asked{' '}<span className="gradient-text">Questions</span>
+          </h2>
+          <p className="text-slate-600 dark:text-gray-300 max-w-[65ch] mx-auto leading-[1.6] text-base sm:text-lg">
+            Direct, data-backed insights into our engineering standards, architecture, and deployment capabilities.
+          </p>
+        </AnimatedSection>
+
+        <div className="space-y-4">
+          {faqs.map((faq, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className="glass rounded-2xl border border-slate-200/90 dark:border-white/5 overflow-hidden bg-white dark:bg-[rgba(13,21,38,0.2)] shadow-md hover:shadow-lg dark:shadow-none transition-all duration-300"
+              >
+                <button
+                  onClick={() => setOpenIndex(isOpen ? -1 : i)}
+                  className="w-full p-6 sm:p-7 flex items-center justify-between text-left gap-4 cursor-pointer select-none"
+                  aria-expanded={isOpen}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono font-bold text-blue-600 dark:text-[var(--accent-primary)] px-2.5 py-1 rounded-full bg-blue-50 dark:bg-cyan-500/10 border border-blue-200 dark:border-cyan-500/20 uppercase">
+                      {faq.category}
+                    </span>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                      {faq.q}
+                    </h3>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-500 dark:text-gray-400 shrink-0 transition-transform duration-300 ${
+                      isOpen ? 'rotate-180 text-blue-600 dark:text-[#00ccff]' : ''
+                    }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    >
+                      <div className="px-6 pb-7 pt-1 sm:px-7 border-t border-slate-100 dark:border-white/5">
+                        <p className="faq-answer text-slate-600 dark:text-gray-300 text-sm sm:text-base leading-relaxed">
+                          {faq.a}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ===== DISCOVERY FORM =====
 function DiscoveryForm() {
   const containerRef = useRef(null);
@@ -2798,6 +2907,7 @@ function Footer() {
             <ul className="space-y-2.5">
               <li><a href="#case-studies" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Case Studies</a></li>
               <li><a href="#founder" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">About the Founder</a></li>
+              <li><a href="#faq" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">FAQ & Knowledge Base</a></li>
               <li><a href="#discovery" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Start a Project</a></li>
               <li><button className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Privacy Policy</button></li>
               <li><button className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Impressum</button></li>
@@ -2837,6 +2947,7 @@ export default function Home() {
       <ServicesSection />
       <CaseStudiesSection />
       <FounderSection />
+      <FAQSection />
       <DiscoveryForm />
       <Footer />
       <ChatWidget />
