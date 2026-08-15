@@ -8,7 +8,7 @@ export const metadata = {
     template: '%s | Signal Zero',
   },
   description:
-    'Signal Zero is an integrated AI and systems engineering agency. We architect custom AI agents, enterprise RAG pipelines, real-time data engineering (Kafka/Spark), FinTech dashboards, and full-stack software.',
+    'Signal Zero is an integrated AI & systems engineering agency. We architect custom AI agents, enterprise RAG pipelines, real-time data, and fintech platforms.',
   keywords: [
     'AI engineering agency',
     'custom AI agents',
