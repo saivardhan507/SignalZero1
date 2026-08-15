@@ -117,8 +117,10 @@ const jsonLd = {
       },
       address: {
         '@type': 'PostalAddress',
+        streetAddress: 'HITEC City, Madhapur',
         addressLocality: 'Hyderabad',
         addressRegion: 'Telangana',
+        postalCode: '500081',
         addressCountry: 'IN',
       },
       sameAs: [
