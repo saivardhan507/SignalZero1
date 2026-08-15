@@ -110,6 +110,8 @@ const jsonLd = {
         'Signal Zero is an integrated AI and systems engineering agency specializing in custom RAG AI agents, real-time data engineering, algorithmic fintech platforms, and scalable full-stack software.',
       email: 'contact@wearesignalzero.tech',
       telephone: '+91-9347302648',
+      priceRange: '$$',
+      currenciesAccepted: 'USD, INR, EUR',
       founder: {
         '@id': 'https://wearesignalzero.tech/#founder',
       },
