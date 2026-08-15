@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   Brain, Code, Database, BarChart3, Cpu, Workflow,
   ArrowRight, Send, MessageSquare, X, ChevronRight, ChevronLeft,
@@ -26,7 +27,6 @@ import {
 
 
 // ===== CUSTOM RECHARTS ANIMATED COMPONENTS =====
-
 
 const AnimatedCounter = ({ value, delay = 0 }) => {
   const [count, setCount] = useState(0);
@@ -82,8 +82,8 @@ const AnimatedCounter = ({ value, delay = 0 }) => {
   return (
     <div 
       ref={ref} 
-      className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-1 tabular-nums transition-shadow duration-300"
-      style={{ textShadow: glow ? '0 0 20px rgba(0,229,255,0.8)' : '0 0 0px transparent' }}
+      className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 tabular-nums transition-shadow duration-300"
+      style={{ textShadow: glow ? '0 0 20px var(--accent-glow)' : '0 0 0px transparent' }}
     >
       {count}{suffix}
     </div>
@@ -139,7 +139,7 @@ const CustomBarShape = (props) => {
       animate={{ scaleY: 1 }}
       transition={{ duration, delay, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        filter: isCyan && !reducedMotion ? 'drop-shadow(0 0 12px rgba(0,229,255,0.4))' : 'none',
+        filter: isCyan && !reducedMotion ? 'drop-shadow(0 0 12px rgba(37,99,235,0.4)) dark:drop-shadow(0 0 12px rgba(0,229,255,0.4))' : 'none',
         transformOrigin: "bottom"
       }}
     />
@@ -167,11 +167,21 @@ function AnimatedEfficiencyChart({ cs }) {
     >
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={cs.data} key={inView ? 'active' : 'reset'}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
           <XAxis dataKey="source" stroke="#64748b" fontSize={11} />
           <YAxis stroke="#64748b" fontSize={12} tick={(props) => <AnimatedYAxisTick {...props} inView={inView} reducedMotion={reducedMotion} />} label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11 }} />
-          <Tooltip contentStyle={{ background: 'rgba(26, 26, 46, 0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,240,255,0.5)', borderRadius: '12px', color: '#e2e8f0', boxShadow: '0 0 20px rgba(0,240,255,0.3), inset 0 0 20px rgba(0,240,255,0.1)' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-          <Bar dataKey="before" fill="#475569" radius={[4, 4, 0, 0]} name="Before" shape={(props) => <CustomBarShape {...props} isCyan={false} />} isAnimationActive={false} />
+          <Tooltip 
+            contentStyle={{ 
+              background: 'rgba(255, 255, 255, 0.95)', 
+              backdropFilter: 'blur(8px)', 
+              border: '1px solid rgba(226, 232, 240, 0.9)', 
+              borderRadius: '12px', 
+              color: '#0f172a', 
+              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' 
+            }} 
+            cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} 
+          />
+          <Bar dataKey="before" fill="#94a3b8" radius={[4, 4, 0, 0]} name="Before" shape={(props) => <CustomBarShape {...props} isCyan={false} />} isAnimationActive={false} />
           <Bar dataKey="after" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} name="After" shape={(props) => <CustomBarShape {...props} isCyan={true} />} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
@@ -358,7 +368,7 @@ function SignalZeroLogo({ className = 'w-10 h-10' }) {
   );
 }
 
-// ===== CINEMATIC SIGNAL WAVE CANVAS =====
+// ===== CINEMATIC SIGNAL WAVE CANVAS (ADAPTIVE THEME) =====
 function SignalWaveCanvas() {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: -9999, y: -9999 });
@@ -433,10 +443,11 @@ function SignalWaveCanvas() {
 
     let lastMouseX = -9999;
     let lastMouseY = -9999;
-    let targetSpeed = 0.014;
     let currentSpeed = 0.014;
 
     function animate() {
+      const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
       // Calculate mouse velocity for wave speed
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
@@ -489,13 +500,11 @@ function SignalWaveCanvas() {
           let target;
           if (!isTouch && dist < FLATTEN_RADIUS) {
             const t = dist / FLATTEN_RADIUS;
-            // Very aggressive flattening near center, edge repulsion bulge
             if (t < 0.5) {
-              target = t * t * 0.05; // nearly zero near cursor
+              target = t * t * 0.05;
             } else {
-              const edge = (t - 0.5) * 2; // 0-1 in outer half
-              target = edge * edge * (3 - 2 * edge); // smoothstep
-              // Edge repulsion: slight amplitude boost at boundary
+              const edge = (t - 0.5) * 2;
+              target = edge * edge * (3 - 2 * edge);
               if (t > 0.75 && t < 0.95) {
                 target *= 1.0 + (1 - Math.abs(t - 0.85) / 0.1) * 0.2;
               }
@@ -532,7 +541,7 @@ function SignalWaveCanvas() {
 
       // 1. Draw baseline grid plane (subtle reference lines)
       ctx.save();
-      ctx.globalAlpha = 0.06;
+      ctx.globalAlpha = isDarkMode ? 0.06 : 0.22;
       for (let r = 0; r < ROWS; r++) {
         ctx.beginPath();
         for (let c = 0; c < COLS; c++) {
@@ -540,7 +549,7 @@ function SignalWaveCanvas() {
           if (c === 0) ctx.moveTo(p.bx, p.by);
           else ctx.lineTo(p.bx, p.by);
         }
-        ctx.strokeStyle = 'var(--accent-primary)';
+        ctx.strokeStyle = isDarkMode ? '#00e5ff' : '#94a3b8';
         ctx.lineWidth = 0.5;
         ctx.stroke();
       }
@@ -551,6 +560,8 @@ function SignalWaveCanvas() {
           if (r === 0) ctx.moveTo(p.bx, p.by);
           else ctx.lineTo(p.bx, p.by);
         }
+        ctx.strokeStyle = isDarkMode ? '#00e5ff' : '#94a3b8';
+        ctx.lineWidth = 0.5;
         ctx.stroke();
       }
       ctx.restore();
@@ -560,30 +571,51 @@ function SignalWaveCanvas() {
         const rowData = pts[r];
         const rowOp = rowData[0].opacity;
 
-        // Vertical stems (spectrum analyzer style)
+        // Vertical stems
         for (let c = 0; c < COLS; c += 2) {
           const p = rowData[c];
           const stemH = Math.abs(p.sy - p.by);
           if (stemH > 1.5) {
-            const stemOp = rowOp * 0.12 * Math.min(1, stemH / 20);
+            const stemOp = rowOp * (isDarkMode ? 0.12 : 0.08) * Math.min(1, stemH / 20);
             ctx.beginPath();
             ctx.moveTo(p.bx, p.by);
             ctx.lineTo(p.sx, p.sy);
-            ctx.strokeStyle = `rgba(0, 229, 255, ${stemOp})`;
+            ctx.strokeStyle = isDarkMode 
+              ? `rgba(0, 229, 255, ${stemOp})` 
+              : `rgba(37, 99, 235, ${stemOp * 1.5})`;
             ctx.lineWidth = Math.max(0.3, 0.8 * p.scale);
             ctx.stroke();
           }
         }
 
-        // Wave line glow (wide, soft)
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
+        // Wave line glow (Dark Mode only uses additive 'lighter' glow for neon effect)
+        if (isDarkMode) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.beginPath();
+          for (let c = 0; c < COLS; c++) {
+            const p = rowData[c];
+            if (c === 0) ctx.moveTo(p.sx, p.sy);
+            else {
+              const prev = rowData[c - 1];
+              const cpx = (prev.sx + p.sx) / 2;
+              ctx.quadraticCurveTo(prev.sx, prev.sy, cpx, (prev.sy + p.sy) / 2);
+            }
+          }
+          const lastP = rowData[COLS - 1];
+          ctx.lineTo(lastP.sx, lastP.sy);
+          ctx.strokeStyle = `rgba(0, 200, 255, ${rowOp * 0.06})`;
+          ctx.lineWidth = Math.max(1, 8 * rowData[0].scale);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Wave line core (Sharp in dark, architectural watermark sketch in light)
         ctx.beginPath();
         for (let c = 0; c < COLS; c++) {
           const p = rowData[c];
           if (c === 0) ctx.moveTo(p.sx, p.sy);
           else {
-            // Smooth curve through points
             const prev = rowData[c - 1];
             const cpx = (prev.sx + p.sx) / 2;
             ctx.quadraticCurveTo(prev.sx, prev.sy, cpx, (prev.sy + p.sy) / 2);
@@ -591,48 +623,37 @@ function SignalWaveCanvas() {
         }
         const lastP = rowData[COLS - 1];
         ctx.lineTo(lastP.sx, lastP.sy);
-        ctx.strokeStyle = `rgba(0, 200, 255, ${rowOp * 0.06})`;
-        ctx.lineWidth = Math.max(1, 8 * rowData[0].scale);
+        
+        ctx.strokeStyle = isDarkMode 
+          ? `rgba(0, 229, 255, ${rowOp * 0.45})` 
+          : `rgba(37, 99, 235, ${rowOp * 0.22})`;
+        ctx.lineWidth = Math.max(0.5, (isDarkMode ? 1.8 : 1.3) * rowData[0].scale);
         ctx.stroke();
-        ctx.restore();
-
-        // Wave line core (sharp, bright)
-        ctx.beginPath();
-        for (let c = 0; c < COLS; c++) {
-          const p = rowData[c];
-          if (c === 0) ctx.moveTo(p.sx, p.sy);
-          else {
-            const prev = rowData[c - 1];
-            const cpx = (prev.sx + p.sx) / 2;
-            ctx.quadraticCurveTo(prev.sx, prev.sy, cpx, (prev.sy + p.sy) / 2);
-          }
-        }
-        ctx.lineTo(lastP.sx, lastP.sy);
-        // Color shifts: more white when signal is strong, more dim when near zero
-        ctx.strokeStyle = `rgba(0, 229, 255, ${rowOp * 0.45})`;
-        ctx.lineWidth = Math.max(0.5, 1.8 * rowData[0].scale);
-        ctx.stroke();
-
-        // Data points removed to look clean
       }
 
       // 3. Cursor "zero zone" indicator
       if (mx > 0 && mx < W && my > 0 && my < H) {
-        // Subtle radial indicator
         const zg = ctx.createRadialGradient(mx, my, 0, mx, my, FLATTEN_RADIUS);
-        zg.addColorStop(0, 'rgba(0, 229, 255, 0.025)');
-        zg.addColorStop(0.5, 'rgba(0, 200, 255, 0.01)');
-        zg.addColorStop(0.85, 'rgba(0, 180, 255, 0.005)');
-        zg.addColorStop(1, 'rgba(0, 150, 255, 0)');
+        if (isDarkMode) {
+          zg.addColorStop(0, 'rgba(0, 229, 255, 0.025)');
+          zg.addColorStop(0.5, 'rgba(0, 200, 255, 0.01)');
+          zg.addColorStop(0.85, 'rgba(0, 180, 255, 0.005)');
+          zg.addColorStop(1, 'rgba(0, 150, 255, 0)');
+        } else {
+          zg.addColorStop(0, 'rgba(37, 99, 235, 0.035)');
+          zg.addColorStop(0.5, 'rgba(37, 99, 235, 0.015)');
+          zg.addColorStop(0.85, 'rgba(37, 99, 235, 0.005)');
+          zg.addColorStop(1, 'rgba(37, 99, 235, 0)');
+        }
         ctx.fillStyle = zg;
         ctx.beginPath();
         ctx.arc(mx, my, FLATTEN_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
-        // Edge ring (like a force field)
+        // Edge ring
         ctx.beginPath();
         ctx.arc(mx, my, FLATTEN_RADIUS, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0, 229, 255, 0.06)';
+        ctx.strokeStyle = isDarkMode ? 'rgba(0, 229, 255, 0.06)' : 'rgba(37, 99, 235, 0.12)';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 8]);
         ctx.stroke();
@@ -641,21 +662,19 @@ function SignalWaveCanvas() {
         // Inner ring
         ctx.beginPath();
         ctx.arc(mx, my, FLATTEN_RADIUS * 0.35, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0, 229, 255, 0.04)';
+        ctx.strokeStyle = isDarkMode ? 'rgba(0, 229, 255, 0.04)' : 'rgba(37, 99, 235, 0.08)';
         ctx.lineWidth = 0.5;
         ctx.stroke();
 
         // Crosshair at cursor
         const ch = 8;
-        ctx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
+        ctx.strokeStyle = isDarkMode ? 'rgba(0, 229, 255, 0.15)' : 'rgba(37, 99, 235, 0.25)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(mx - ch, my); ctx.lineTo(mx + ch, my);
         ctx.moveTo(mx, my - ch); ctx.lineTo(mx, my + ch);
         ctx.stroke();
       }
-
-      // 4. Ambient and active particles removed for clean look
 
       animRef.current = requestAnimationFrame(animate);
     }
@@ -714,14 +733,13 @@ function Navigation() {
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 50);
-      // Calculate scroll progress percentage
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (docHeight > 0) {
         setScrollProgress(Math.min((window.scrollY / docHeight) * 100, 100));
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // initial state
+    onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -737,7 +755,7 @@ function Navigation() {
     <nav 
       className={`fixed top-0 left-0 w-full z-[1000] transition-all duration-400 ease-in-out ${
         scrolled 
-          ? 'bg-[var(--bg-base)]/65 backdrop-blur-[16px] border-b border-[var(--accent-primary)]/12 shadow-[0_4px_30px_rgba(0,0,0,0.1)] py-3' 
+          ? 'bg-white/85 dark:bg-[#050810]/75 backdrop-blur-[16px] border-b border-slate-200/80 dark:border-cyan-500/15 shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.1)] py-3' 
           : 'bg-transparent border-b border-transparent py-5'
       }`}
     >
@@ -746,48 +764,57 @@ function Navigation() {
         <a href="#" className="flex items-center gap-3 group">
           <SignalZeroLogo className="w-9 h-9 transition-transform group-hover:scale-110 text-[var(--accent-primary)]" />
           <div>
-            <span className="text-[var(--text-primary)] font-bold text-lg tracking-widest">SIGNAL</span>
+            <span className="text-slate-900 dark:text-[var(--text-primary)] font-bold text-lg tracking-widest transition-colors">SIGNAL</span>
             <span className="text-[var(--accent-primary)] font-bold text-lg tracking-widest ml-1">ZERO</span>
           </div>
         </a>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-8">
+        {/* Desktop Links & Controls */}
+        <div className="hidden md:flex items-center gap-7">
           {links.map((link) => (
             <a 
               key={link.href} 
               href={link.href} 
-              className="group relative text-[13px] text-gray-300 hover:text-[var(--accent-primary)] transition-colors duration-300 tracking-[0.05em] font-medium uppercase hover:[text-shadow:0_0_8px_rgba(0,245,255,0.4)]"
+              className="group relative text-[13px] text-slate-600 dark:text-gray-300 hover:text-[var(--accent-primary)] dark:hover:text-[var(--accent-primary)] transition-colors duration-300 tracking-[0.05em] font-medium uppercase dark:hover:[text-shadow:0_0_8px_rgba(0,245,255,0.4)]"
             >
               {link.label}
-              {/* Subtle underline scale-in animation */}
-              <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[var(--accent-primary)] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full shadow-[0_0_8px_rgba(0,245,255,0.6)]" />
+              <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[var(--accent-primary)] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full shadow-[0_0_8px_rgba(37,99,235,0.4)] dark:shadow-[0_0_8px_rgba(0,245,255,0.6)]" />
             </a>
           ))}
-          <Button asChild className="bg-[var(--accent-primary)] text-[var(--bg-base)] hover:bg-[var(--accent-primary)] font-bold px-6 py-5 rounded-full text-sm transition-all duration-300 hover:shadow-[0_0_18px_rgba(0,245,255,0.5)]">
+
+          {/* Theme Toggle Button */}
+          <ThemeToggle />
+
+          {/* CTA Button */}
+          <Button asChild className="bg-blue-600 dark:bg-[#00ccff] text-white dark:text-[#050810] hover:bg-blue-700 dark:hover:bg-[#00ccff] font-bold px-6 py-5 rounded-full text-sm transition-all duration-300 shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-[0_0_18px_rgba(0,245,255,0.5)]">
             <a href="#discovery">
               Start a Project <ArrowRight className="w-4 h-4 ml-2" />
             </a>
           </Button>
         </div>
 
-        {/* Mobile Toggle */}
-        <button className="md:hidden text-white hover:text-[var(--accent-primary)] transition-colors" onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
-        </button>
+        {/* Mobile Toggle Group */}
+        <div className="md:hidden flex items-center gap-3">
+          <ThemeToggle />
+          <button 
+            className="text-slate-800 dark:text-white hover:text-[var(--accent-primary)] transition-colors" 
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {menuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+          </button>
+        </div>
       </div>
 
       {/* Scroll Progress Bar at the very bottom edge of the header */}
-      <div
-        className="absolute bottom-0 left-0 h-[3px] w-full overflow-hidden"
-      >
+      <div className="absolute bottom-0 left-0 h-[3px] w-full overflow-hidden">
         <div
           className="h-full w-full"
           style={{
             transform: `scaleX(${scrollProgress * 0.01})`,
             transformOrigin: 'left',
             background: 'linear-gradient(90deg, var(--accent-primary), #0080ff)',
-            boxShadow: '0 0 8px rgba(0, 229, 255, 0.5), 0 0 2px rgba(0, 229, 255, 0.3)',
+            boxShadow: '0 0 8px rgba(37, 99, 235, 0.4), 0 0 2px rgba(37, 99, 235, 0.2)',
             transition: 'transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             willChange: 'transform',
           }}
@@ -802,7 +829,7 @@ function Navigation() {
             animate={{ opacity: 1, scaleY: 1 }}
             exit={{ opacity: 0, scaleY: 0 }}
             style={{ transformOrigin: 'top' }}
-            className="md:hidden absolute top-full left-0 w-full bg-[#050810] shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-y-auto z-[9999] pointer-events-auto will-change-transform"
+            className="md:hidden absolute top-full left-0 w-full bg-white/95 dark:bg-[#050810] backdrop-blur-xl border-b border-slate-200 dark:border-white/5 shadow-xl dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-y-auto z-[9999] pointer-events-auto will-change-transform"
           >
             <div className="px-6 py-8 flex flex-col gap-2">
               {links.map((link) => (
@@ -811,19 +838,18 @@ function Navigation() {
                   href={link.href} 
                   onClick={() => setMenuOpen(false)}
                   onTouchEnd={() => setMenuOpen(false)}
-                  className="block w-full py-4 text-gray-300 hover:text-[var(--accent-primary)] text-lg font-bold tracking-widest uppercase transition-colors cursor-pointer"
-                  style={{ minHeight: '48px', WebkitTapHighlightColor: 'rgba(0,229,255,0.2)' }}
+                  className="block w-full py-4 text-slate-700 dark:text-gray-300 hover:text-[var(--accent-primary)] text-lg font-bold tracking-widest uppercase transition-colors cursor-pointer border-b border-slate-100 dark:border-white/5"
+                  style={{ minHeight: '48px' }}
                 >
                   {link.label}
                 </a>
               ))}
-              <Button asChild className="mt-6 w-full bg-[var(--accent-primary)] text-[var(--bg-base)] hover:bg-[var(--accent-primary)] font-bold py-6 rounded-full text-lg transition-all duration-300 hover:shadow-[0_0_18px_rgba(0,245,255,0.5)]">
+              <Button asChild className="mt-6 w-full bg-blue-600 dark:bg-[#00ccff] text-white dark:text-[#050810] hover:bg-blue-700 dark:hover:bg-[#00ccff] font-bold py-6 rounded-full text-lg transition-all duration-300 shadow-md dark:shadow-none dark:hover:shadow-[0_0_18px_rgba(0,245,255,0.5)]">
                 <a 
                   href="#discovery" 
                   onClick={() => setMenuOpen(false)} 
                   onTouchEnd={() => setMenuOpen(false)}
                   className="block w-full cursor-pointer"
-                  style={{ WebkitTapHighlightColor: 'rgba(0,229,255,0.2)' }}
                 >
                   Start a Project <ArrowRight className="inline-block w-5 h-5 ml-2" />
                 </a>
@@ -838,7 +864,6 @@ function Navigation() {
 
 // ===== HERO SECTION =====
 
-
 const AnimatedDot = (props) => {
   const { cx, cy, stroke, index, inView, reducedMotion } = props;
   if (!inView) return null;
@@ -850,7 +875,7 @@ const AnimatedDot = (props) => {
       r={4}
       stroke={stroke}
       strokeWidth={2}
-      fill="#0a0a1a"
+      className="fill-white dark:fill-[#0a0a1a]"
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       transition={{ 
@@ -871,12 +896,11 @@ const AnimatedAreaChart = ({ cs }) => {
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
   const yParallax = useTransform(scrollYProgress, [0, 1], [25, -25]);
   
-  // Fill opacity state for flood-in effect
   const [fillOpacity, setFillOpacity] = useState(0);
 
   useEffect(() => {
     if (inView && !reducedMotion) {
-      const timer = setTimeout(() => setFillOpacity(1), 400); // 400ms delay for flood-in
+      const timer = setTimeout(() => setFillOpacity(1), 400);
       return () => clearTimeout(timer);
     } else {
       setFillOpacity(0);
@@ -900,12 +924,19 @@ const AnimatedAreaChart = ({ cs }) => {
               <stop offset="5%" stopColor="var(--accent-secondary)" stopOpacity={reducedMotion ? 0.3 : 0.3 * fillOpacity} style={{ transition: 'stop-opacity 0.8s ease-in-out' }} />
               <stop offset="95%" stopColor="var(--accent-secondary)" stopOpacity={0} />
             </linearGradient>
-            {/* Removed clipPath masking — caused Recharts rendering issues in some browsers. */}
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
           <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
           <YAxis stroke="#64748b" fontSize={12} tick={(props) => <AnimatedYAxisTick {...props} inView={inView} reducedMotion={reducedMotion} />} label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11 }} />
-          <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(0,240,255,0.2)', borderRadius: '8px', color: '#e2e8f0' }} />
+          <Tooltip 
+            contentStyle={{ 
+              background: 'rgba(255, 255, 255, 0.95)', 
+              border: '1px solid rgba(226, 232, 240, 0.9)', 
+              borderRadius: '8px', 
+              color: '#0f172a',
+              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)'
+            }} 
+          />
           
           <Area 
             type="monotone" 
@@ -931,7 +962,7 @@ const AnimatedAreaChart = ({ cs }) => {
               return <AnimatedDot key={key || props.index} {...rest} inView={inView} reducedMotion={reducedMotion} />;
             }} 
           />
-          <Line type="monotone" dataKey="baseline" stroke="#475569" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+          <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeDasharray="5 5" strokeWidth={1} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </motion.div>
@@ -963,12 +994,18 @@ const AnimatedModelComparison = ({ cs, modelComparisonData }) => {
     >
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={modelComparisonData} key={inView ? 'active' : 'reset'}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
           <XAxis dataKey="name" stroke="#64748b" fontSize={10} />
           <YAxis stroke="#64748b" fontSize={10} tick={(props) => <AnimatedYAxisTick {...props} inView={inView} reducedMotion={reducedMotion} />} domain={[0, 100]} />
           <Tooltip
-            contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(0,240,255,0.2)', borderRadius: '8px', color: '#e2e8f0' }}
-            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+            contentStyle={{ 
+              background: 'rgba(255, 255, 255, 0.95)', 
+              border: '1px solid rgba(226, 232, 240, 0.9)', 
+              borderRadius: '8px', 
+              color: '#0f172a',
+              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)'
+            }}
+            cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
           />
           <Bar 
             dataKey="value" 
@@ -991,6 +1028,14 @@ const AnimatedModelComparison = ({ cs, modelComparisonData }) => {
       </ResponsiveContainer>
       <style jsx>{`
         @keyframes winnerPulse {
+          0%   { filter: drop-shadow(0 0 0px rgba(37,99,235,0)); }
+          50%  { filter: drop-shadow(0 0 12px rgba(37,99,235,0.8)); }
+          100% { filter: drop-shadow(0 0 4px rgba(37,99,235,0.4)); }
+        }
+        :global(.dark) .animate-winnerPulse {
+          animation: winnerPulseDark 1.5s ease-in-out infinite;
+        }
+        @keyframes winnerPulseDark {
           0%   { filter: drop-shadow(0 0 0px rgba(0,229,255,0)); }
           50%  { filter: drop-shadow(0 0 12px rgba(0,229,255,0.8)); }
           100% { filter: drop-shadow(0 0 4px rgba(0,229,255,0.4)); }
@@ -1029,8 +1074,8 @@ function HeroSection() {
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <div className="mb-6 lg:mb-8 border border-white/10 bg-white/5 backdrop-blur-md px-5 py-2 text-[clamp(0.65rem,1.2vw,0.75rem)] tracking-[0.2em] uppercase rounded-full pointer-events-auto font-medium inline-flex items-center text-zinc-300 hover:text-white hover:border-[var(--accent-glow)]/50 hover:shadow-[0_0_15px_rgba(0,255,127,0.2)] transition-all duration-300 group cursor-default">
-            <Sparkles className="w-3.5 h-3.5 mr-2 text-[var(--accent-glow)] group-hover:animate-pulse" /> Integrated AI & Systems Engineering Agency
+          <div className="mb-6 lg:mb-8 border border-blue-200/80 dark:border-white/10 bg-blue-50/80 dark:bg-white/5 backdrop-blur-md px-5 py-2 text-[clamp(0.65rem,1.2vw,0.75rem)] tracking-[0.2em] uppercase rounded-full pointer-events-auto font-medium inline-flex items-center text-blue-700 dark:text-zinc-300 hover:text-blue-900 dark:hover:text-white hover:border-blue-400 dark:hover:border-cyan-400/50 shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-[0_0_15px_rgba(0,255,127,0.2)] transition-all duration-300 group cursor-default">
+            <Sparkles className="w-3.5 h-3.5 mr-2 text-blue-600 dark:text-[#00ccff] group-hover:animate-pulse" /> Integrated AI & Systems Engineering Agency
           </div>
         </motion.div>
 
@@ -1045,13 +1090,13 @@ function HeroSection() {
         >
           <motion.span
             style={{ x: useTransform(splitX, v => -v) }}
-            className="text-[var(--text-primary)]"
+            className="text-slate-900 dark:text-[var(--text-primary)] transition-colors"
           >
             SIGNAL
           </motion.span>
           <motion.span
             style={{ x: splitX }}
-            className="neon-text text-[var(--accent-primary)] drop-shadow-[0_0_40px_rgba(0,204,255,0.4)]"
+            className="neon-text text-blue-600 dark:text-[#00ccff] dark:drop-shadow-[0_0_40px_rgba(0,204,255,0.4)]"
           >
             ZERO
           </motion.span>
@@ -1062,7 +1107,7 @@ function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-[clamp(1rem,2vw,1.15rem)] font-medium text-zinc-400 max-w-[65ch] mx-auto mb-10 lg:mb-12 leading-[1.7] pointer-events-auto cursor-default"
+          className="text-[clamp(1rem,2vw,1.15rem)] font-medium text-slate-600 dark:text-zinc-400 max-w-[65ch] mx-auto mb-10 lg:mb-12 leading-[1.7] pointer-events-auto cursor-default transition-colors"
         >
           We engineer intelligent systems that transform raw data into competitive advantage. From custom AI agents to real-time analytics — we build what others can&apos;t.
         </motion.p>
@@ -1074,21 +1119,19 @@ function HeroSection() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 pointer-events-auto w-full max-w-lg mx-auto"
         >
-          <Button asChild className="w-full sm:w-auto bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-primary)] text-[#030303] hover:scale-[1.02] hover:brightness-110 font-bold px-10 py-6 rounded-full text-[15px] tracking-wide border-0 transition-all duration-300"
-                  style={{ boxShadow: "0 0 20px rgba(0, 204, 255, 0.3)" }}>
+          <Button asChild className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-gradient-to-r dark:from-[#00ccff] dark:to-[#00ccff] text-white dark:text-[#030303] hover:scale-[1.02] dark:hover:brightness-110 font-bold px-10 py-6 rounded-full text-[15px] tracking-wide border-0 transition-all duration-300 shadow-md hover:shadow-lg dark:shadow-[0_0_20px_rgba(0,204,255,0.3)]">
             <a href="#discovery">
               Start Your Project <ArrowRight className="w-5 h-5 ml-2" />
             </a>
           </Button>
-          <Button asChild variant="outline" className="w-full sm:w-auto glass border-white/10 bg-white/5 backdrop-blur-md text-white hover:bg-white/10 hover:text-white px-10 py-6 rounded-full text-[15px] tracking-wide transition-all duration-300">
+          <Button asChild variant="outline" className="w-full sm:w-auto glass border-slate-200/90 dark:border-white/10 bg-white/90 dark:bg-white/5 backdrop-blur-md text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white px-10 py-6 rounded-full text-[15px] tracking-wide transition-all duration-300 shadow-sm dark:shadow-none">
             <a href="#case-studies">
-              View Our Work <ExternalLink className="w-4 h-4 ml-2 text-zinc-400" />
+              View Our Work <ExternalLink className="w-4 h-4 ml-2 text-slate-500 dark:text-zinc-400" />
             </a>
           </Button>
         </motion.div>
 
-        {/* Bento Grid Stats */}
-        {/* Bento Grid Stats */}
+        {/* Bento Grid Stats (Pure White Elevated Cards in Light Mode, Glass in Dark) */}
         <motion.div 
           className="mt-16 lg:mt-24 grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl w-full mx-auto pointer-events-auto relative z-10 px-2 lg:px-0"
           style={{ y: useTransform(scrollY, [0, 800], [0, -40]), willChange: 'transform' }}
@@ -1100,22 +1143,22 @@ function HeroSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: false, amount: 0.3 }}
               transition={{ duration: 0.6, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="glass p-6 sm:p-7 transition-all duration-500 group relative overflow-clip text-left"
+              className="glass p-6 sm:p-7 transition-all duration-500 group relative overflow-clip text-left bg-white dark:bg-[rgba(13,21,38,0.2)] border border-slate-200/90 dark:border-white/10 shadow-md hover:shadow-xl dark:shadow-none"
             >
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[var(--accent-glow)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-500/5 dark:from-cyan-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               <div className="flex items-center gap-3 mb-4">
                 <motion.div 
                   initial={{ scale: 0.6 }}
                   whileInView={{ scale: 1 }}
                   viewport={{ once: false, amount: 0.5 }}
                   transition={{ duration: 0.4, delay: i * 0.1, ease: [0.34, 1.56, 0.64, 1] }}
-                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:border-[var(--accent-glow)]/30 transition-colors duration-300"
+                  className="p-2.5 rounded-xl bg-blue-50 dark:bg-white/5 border border-blue-100 dark:border-white/10 group-hover:border-blue-300 dark:group-hover:border-[var(--accent-glow)]/30 transition-colors duration-300"
                 >
-                  <stat.icon className="w-5 h-5 text-[var(--accent-glow)]" />
+                  <stat.icon className="w-5 h-5 text-blue-600 dark:text-[var(--accent-glow)]" />
                 </motion.div>
               </div>
               <AnimatedCounter value={stat.value} delay={i * 150} />
-              <div className="text-[10px] sm:text-[11px] text-zinc-400 tracking-[0.2em] font-medium uppercase">{stat.label}</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 tracking-[0.2em] font-semibold uppercase">{stat.label}</div>
             </motion.div>
           ))}
         </motion.div>
@@ -1130,7 +1173,7 @@ function HeroSection() {
         onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
       >
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
-          <ArrowDown className="w-5 h-5 text-zinc-500 hover:text-white transition-colors" />
+          <ArrowDown className="w-5 h-5 text-slate-400 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-white transition-colors" />
         </motion.div>
       </motion.div>
     </section>
@@ -1140,16 +1183,16 @@ function HeroSection() {
 // ===== ABOUT US SECTION =====
 function AboutUsSection() {
   return (
-    <section id="about" className="py-32 sm:py-40 px-4 sm:px-6 relative border-t border-white/5 overflow-hidden">
+    <section id="about" className="py-32 sm:py-40 px-4 sm:px-6 relative border-t border-slate-200/80 dark:border-white/5 overflow-hidden">
       {/* High-tech wave pattern background */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,240,255,0.15)_0%,transparent_70%)]" />
-        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(0, 229, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 229, 255, 0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.08)_0%,transparent_70%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(0,240,255,0.15)_0%,transparent_70%)]" />
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       </div>
 
       {/* Radiant glow spots */}
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[clamp(20rem,40vw,40rem)] aspect-square bg-[var(--accent-primary)] rounded-full opacity-[0.02] blur-[150px] pointer-events-none" />
-      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[clamp(20rem,40vw,40rem)] aspect-square bg-[var(--accent-secondary)] rounded-full opacity-[0.02] blur-[150px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[clamp(20rem,40vw,40rem)] aspect-square bg-[var(--accent-primary)] rounded-full opacity-[0.03] blur-[150px] pointer-events-none" />
+      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[clamp(20rem,40vw,40rem)] aspect-square bg-[var(--accent-secondary)] rounded-full opacity-[0.03] blur-[150px] pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -1158,43 +1201,43 @@ function AboutUsSection() {
         transition={{ duration: 0.8, type: "spring", stiffness: 60, damping: 14 }}
         className="max-w-7xl mx-auto relative z-10"
       >
-        <div className="glass p-10 sm:p-16 rounded-3xl border border-white/5">
+        <div className="glass p-10 sm:p-16 rounded-3xl border border-slate-200/80 dark:border-white/5 bg-white dark:bg-[rgba(13,21,38,0.2)] shadow-xl dark:shadow-none">
           <AnimatedSection>
             {/* Label */}
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-1.5 h-8 bg-[var(--accent-primary)] rounded-full shadow-[0_0_15px_rgba(0,240,255,0.6)]" />
-              <h2 className="text-[var(--accent-primary)] text-xs font-black tracking-[0.2em] font-mono uppercase" style={{ textShadow: "0 0 20px rgba(0,240,255,0.4)" }}>
+              <div className="w-1.5 h-8 bg-blue-600 dark:bg-[#00ccff] rounded-full shadow-[0_0_12px_rgba(37,99,235,0.4)] dark:shadow-[0_0_15px_rgba(0,240,255,0.6)]" />
+              <h2 className="text-blue-600 dark:text-[#00ccff] text-xs font-black tracking-[0.2em] font-mono uppercase dark:[text-shadow:0_0_20px_rgba(0,240,255,0.4)]">
                 ABOUT US
               </h2>
             </div>
 
             {/* Main Heading */}
-            <h3 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-white mb-16 leading-[1.2] max-w-4xl tracking-tight" style={{ textShadow: "0 0 40px rgba(0,240,255,0.4)" }}>
+            <h3 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-16 leading-[1.2] max-w-4xl tracking-tight dark:[text-shadow:0_0_40px_rgba(0,240,255,0.4)]">
               We are a hybrid software company built by a team of obsessively detailed professionals.
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 sm:gap-20">
               {/* Left Column */}
               <div className="space-y-8">
-                <p className="text-gray-400 text-lg sm:text-xl leading-relaxed">
-                  <strong className="text-white font-semibold tracking-wide">Signal Zero</strong> creates its own products and helps startups and businesses grow with strong software solutions.
+                <p className="text-slate-600 dark:text-gray-400 text-lg sm:text-xl leading-relaxed">
+                  <strong className="text-slate-900 dark:text-white font-semibold tracking-wide">Signal Zero</strong> creates its own products and helps startups and businesses grow with strong software solutions.
                 </p>
-                <p className="text-gray-400 text-lg sm:text-xl leading-relaxed">
-                  We focus on <strong className="text-white font-semibold">clean design, reliable execution, and friendly communication.</strong>
+                <p className="text-slate-600 dark:text-gray-400 text-lg sm:text-xl leading-relaxed">
+                  We focus on <strong className="text-slate-900 dark:text-white font-semibold">clean design, reliable execution, and friendly communication.</strong>
                 </p>
               </div>
 
               {/* Right Column */}
               <div className="space-y-10">
-                <p className="text-gray-400 text-lg sm:text-xl leading-relaxed">
+                <p className="text-slate-600 dark:text-gray-400 text-lg sm:text-xl leading-relaxed">
                   Our goal is simple. Build tools that solve real problems and support companies that want to scale with technology.
                 </p>
 
-                <div className="flex items-center gap-5 mt-4 pt-8 border-t border-white/5">
-                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent-primary)]/10 flex items-center justify-center border border-[var(--accent-primary)]/30 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
-                    <Code className="w-6 h-6 text-[var(--accent-primary)]" />
+                <div className="flex items-center gap-5 mt-4 pt-8 border-t border-slate-200 dark:border-white/5">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-cyan-500/10 flex items-center justify-center border border-blue-200 dark:border-cyan-500/30 shadow-sm dark:shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+                    <Code className="w-6 h-6 text-blue-600 dark:text-[#00ccff]" />
                   </div>
-                  <p className="text-[var(--accent-primary)] font-mono text-sm sm:text-base tracking-[0.05em] font-bold" style={{ textShadow: "0 0 20px rgba(0,240,255,0.4)" }}>
+                  <p className="text-blue-700 dark:text-[#00ccff] font-mono text-sm sm:text-base tracking-[0.05em] font-bold dark:[text-shadow:0_0_20px_rgba(0,240,255,0.4)]">
                     "Simplicity is the ultimate sophistication."
                   </p>
                 </div>
@@ -1210,17 +1253,17 @@ function AboutUsSection() {
 // ===== SERVICES SECTION =====
 function ServicesSection() {
   return (
-    <section id="services" className="py-32 sm:py-40 px-4 sm:px-6 relative">
-      <div className="absolute top-0 right-0 w-[clamp(15rem,30vw,30rem)] aspect-square bg-[var(--accent-secondary)] rounded-full opacity-[0.02] blur-[150px]" />
+    <section id="services" className="py-32 sm:py-40 px-4 sm:px-6 relative border-t border-slate-200/80 dark:border-transparent">
+      <div className="absolute top-0 right-0 w-[clamp(15rem,30vw,30rem)] aspect-square bg-[var(--accent-secondary)] rounded-full opacity-[0.03] blur-[150px]" />
       <div className="max-w-7xl mx-auto">
         <AnimatedSection className="text-center mb-20">
-          <Badge variant="outline" className="mb-4 border-[var(--accent-secondary)]/30 text-[var(--accent-secondary)] bg-[var(--accent-secondary)]/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
+          <Badge variant="outline" className="mb-4 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-[#7b2fff] bg-purple-50 dark:bg-purple-500/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
             <Layers className="w-3.5 h-3.5 mr-2" /> WHAT WE BUILD
           </Badge>
-          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
             Core Engineering{' '}<span className="gradient-text">Capabilities</span>
           </h2>
-          <p className="text-gray-300 max-w-[65ch] mx-auto leading-[1.6] text-base sm:text-lg">From concept to deployment, we deliver end-to-end solutions across the full technology spectrum.</p>
+          <p className="text-slate-600 dark:text-gray-300 max-w-[65ch] mx-auto leading-[1.6] text-base sm:text-lg">From concept to deployment, we deliver end-to-end solutions across the full technology spectrum.</p>
         </AnimatedSection>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-32 sm:mb-40">
           {SERVICES.map((service, i) => {
@@ -1243,15 +1286,15 @@ function ServicesSection() {
                 transition={{ duration: 0.8, delay: i * 0.1, type: "spring", stiffness: 60, damping: 14 }}
               >
                 <TiltCard>
-                  <div className="glass rounded-2xl p-7 h-full border border-white/5 hover:border-white/10 transition-all duration-500 group">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6" style={{ background: `${service.color}12` }}>
+                  <div className="glass rounded-2xl p-7 h-full border border-slate-200/90 dark:border-white/5 hover:border-blue-400/50 dark:hover:border-white/10 transition-all duration-500 group bg-white dark:bg-[rgba(13,21,38,0.2)] shadow-md hover:shadow-xl dark:shadow-none">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6" style={{ background: `${service.color}15` }}>
                       <service.icon className="w-6 h-6" style={{ color: service.color }} />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-[var(--accent-primary)] transition-colors tracking-tight leading-tight">{service.title}</h3>
-                    <p className="text-base text-gray-300 mb-6 leading-[1.6]">{service.description}</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-[var(--accent-primary)] transition-colors tracking-tight leading-tight">{service.title}</h3>
+                    <p className="text-base text-slate-600 dark:text-gray-300 mb-6 leading-[1.6]">{service.description}</p>
                     <div className="flex flex-wrap gap-2">
                       {service.tech.map(t => (
-                        <span key={t} className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/5 font-mono tracking-[0.05em] uppercase">{t}</span>
+                        <span key={t} className="text-[11px] px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-gray-400 border border-slate-200 dark:border-white/5 font-mono tracking-[0.05em] uppercase font-medium">{t}</span>
                       ))}
                     </div>
                   </div>
@@ -1281,19 +1324,19 @@ function OurProcessSection() {
 
   const steps = [
     {
-      id: 1, title: 'Ideation', description: 'We brainstorm and refine your concept.', color: '#00e5ff',
+      id: 1, title: 'Ideation', description: 'We brainstorm and refine your concept.', color: '#2563eb',
       icon: <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
     },
     {
-      id: 2, title: 'Scope', description: 'Defining clear requirements and roadmap.', color: '#a855f7',
+      id: 2, title: 'Scope', description: 'Defining clear requirements and roadmap.', color: '#7c3aed',
       icon: <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
     },
     {
-      id: 3, title: 'Design', description: 'Creating intuitive and beautiful interfaces.', color: '#f43f8e',
+      id: 3, title: 'Design', description: 'Creating intuitive and beautiful interfaces.', color: '#ec4899',
       icon: <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 20.94c1.88 0 3.05-1.04 3.05-2.08 0-1.1-1.12-1.48-1.57-2.67a5 5 0 0 1-4.14-7.58c.24-.4.8-1.3 1.14-1.63a7.41 7.41 0 0 0-1.52-5 9.87 9.87 0 0 0-4.43 2.5 10.4 10.4 0 0 0-2.45 4.5 10.13 10.13 0 0 0 3.23 9.4 14.52 14.52 0 0 0 6.69 2.56z"/><circle cx="6.5" cy="5.5" r=".5"/><circle cx="10" cy="4" r=".5"/><circle cx="13.5" cy="6.5" r=".5"/><circle cx="15.5" cy="10" r=".5"/><circle cx="16" cy="14" r=".5"/></svg>
     },
     {
-      id: 4, title: 'Development', description: 'Clean coding with scalable architecture.', color: '#00d68f',
+      id: 4, title: 'Development', description: 'Clean coding with scalable architecture.', color: '#10b981',
       icon: <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg>
     },
     {
@@ -1301,7 +1344,7 @@ function OurProcessSection() {
       icon: <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5 21 3M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.71-2.13.09-3.09a3 3 0 0 0-3.09.09zM12 15l9 3 3-3-3-9-15-3-3 3 3 9z"/></svg>
     },
     {
-      id: 6, title: 'Support', description: 'Ongoing maintenance and improvements.', color: '#3b82f6',
+      id: 6, title: 'Support', description: 'Ongoing maintenance and improvements.', color: '#06b6d4',
       icon: <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
     }
   ];
@@ -1312,17 +1355,17 @@ function OurProcessSection() {
       style={{ scale: sectionScale, opacity: sectionOpacity, y: sectionY }}
       className="py-10 sm:py-20 px-[20px] md:px-[60px]"
     >
-      <div className="glass rounded-[40px] px-5 py-10 md:p-[60px] border border-white/5 overflow-clip mx-auto max-w-[1200px] w-full flex flex-col relative">
+      <div className="glass rounded-[40px] px-5 py-10 md:p-[60px] border border-slate-200/80 dark:border-white/5 overflow-clip mx-auto max-w-[1200px] w-full flex flex-col relative bg-white/90 dark:bg-[rgba(13,21,38,0.2)] shadow-xl dark:shadow-none">
         
         {/* Header */}
         <div className="text-center mb-16 relative z-10 mx-auto max-w-2xl">
-          <h3 className="text-[11px] font-mono font-bold text-[var(--accent-primary)] mb-4" style={{ letterSpacing: '0.2em', textShadow: "0 0 20px rgba(0,240,255,0.4)" }}>
+          <h3 className="text-[11px] font-mono font-bold text-blue-600 dark:text-[var(--accent-primary)] mb-4 tracking-[0.2em] dark:[text-shadow:0_0_20px_rgba(0,240,255,0.4)]">
             HOW WE WORK
           </h3>
-          <h2 className="text-[28px] sm:text-[36px] md:text-[46px] font-extrabold text-[#f0f4ff] mb-6 tracking-tight">
+          <h2 className="text-[28px] sm:text-[36px] md:text-[46px] font-extrabold text-slate-900 dark:text-[#f0f4ff] mb-6 tracking-tight">
             The Signal Zero Process
           </h2>
-          <p className="text-[#8892a4] text-[16px] leading-[1.7]">Six orchestrated steps connecting your concept to a thriving product.</p>
+          <p className="text-slate-600 dark:text-[#8892a4] text-[16px] leading-[1.7]">Six orchestrated steps connecting your concept to a thriving product.</p>
         </div>
 
         <style dangerouslySetInnerHTML={{__html: `
@@ -1359,7 +1402,6 @@ function OurProcessSection() {
                 <linearGradient id="g4-5"><stop offset="0%" stopColor={steps[3].color}/><stop offset="100%" stopColor={steps[4].color}/></linearGradient>
                 <linearGradient id="g5-6"><stop offset="0%" stopColor={steps[4].color}/><stop offset="100%" stopColor={steps[5].color}/></linearGradient>
 
-                {/* SVG Masks for "Drawing" the paths that contain natively scrolling CSS dashes */}
                 <mask id="mask1">
                   <motion.path d="M 328 140 C 344 160, 360 120, 376 140" stroke="white" strokeWidth="8" fill="none"
                                initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: false, margin: '-20%' }} transition={{ duration: 0.4, delay: 1 * 0.15 }} />
@@ -1382,7 +1424,6 @@ function OurProcessSection() {
                 </mask>
               </defs>
 
-              {/* Infinitely Scrolling Dashed Paths tied to the expanding Masks */}
               <path d="M 328 140 C 344 160, 360 120, 376 140" stroke="url(#g1-2)" className="process-connector" mask="url(#mask1)" />
               <path d="M 704 140 C 720 160, 736 120, 752 140" stroke="url(#g2-3)" className="process-connector" mask="url(#mask2)" />
               <path d="M 1026 140 C 1076 140, 1076 468, 1026 468" stroke="url(#g3-4)" className="process-connector" mask="url(#mask3)" />
@@ -1394,7 +1435,6 @@ function OurProcessSection() {
           {/* Core Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-y-[48px] md:gap-x-[48px] md:gap-y-[48px] w-full relative z-10">
             {steps.map((step) => {
-              // Custom grid positions for snake flow
               const isCol3Row2 = step.id === 4;
               const isCol2Row2 = step.id === 5;
               const isCol1Row2 = step.id === 6;
@@ -1412,17 +1452,17 @@ function OurProcessSection() {
                      transition={{ duration: 0.4, delay: step.id * 0.15 }}
                      style={{ 
                        '--hover-border': `${step.color}66`,
-                       '--hover-shadow': `0 0 40px ${step.color}66`
+                       '--hover-shadow': `0 10px 30px ${step.color}33`
                      }}>
                   {/* Card */}
                   <div
-                    className={`card-hover-effect relative flex flex-col items-start p-8 rounded-[20px] ${isActive ? 'bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.08)] shadow-[0_0_40px_rgba(255,255,255,0.08)]' : 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.08)]'}`}
-                    style={{ minHeight: '280px', borderStyle: 'solid', borderWidth: '1px' }}
+                    className={`card-hover-effect relative flex flex-col items-start p-8 rounded-[20px] bg-slate-50 dark:bg-[rgba(255,255,255,0.03)] border border-slate-200/90 dark:border-[rgba(255,255,255,0.08)] shadow-sm dark:shadow-none ${isActive ? 'ring-2 ring-blue-500/20 dark:ring-white/20' : ''}`}
+                    style={{ minHeight: '280px' }}
                   >
                     <div className="w-[64px] h-[64px] rounded-full flex items-center justify-center self-center mb-6 relative z-10"
                          style={{ 
                            border: `2px solid ${step.color}`,
-                           background: `${step.color}1a`
+                           background: `${step.color}15`
                          }}>
                       <div style={{ color: step.color }}>
                         {step.icon}
@@ -1431,18 +1471,18 @@ function OurProcessSection() {
                     
                     <div className="w-full relative z-10 text-center md:text-left">
                       <div className="font-mono font-bold uppercase mb-2"
-                           style={{ letterSpacing: '0.2em', fontSize: '11px', color: step.color, opacity: 0.8 }}>
+                           style={{ letterSpacing: '0.2em', fontSize: '11px', color: step.color, opacity: 0.9 }}>
                         STEP {step.id}
                       </div>
-                      <h4 className="text-[22px] font-bold text-[#f0f4ff] mb-2 leading-tight">
+                      <h4 className="text-[22px] font-bold text-slate-900 dark:text-[#f0f4ff] mb-2 leading-tight">
                         {step.title}
                       </h4>
-                      <p className="text-[14px] leading-[1.7] text-[#8892a4]">
+                      <p className="text-[14px] leading-[1.7] text-slate-600 dark:text-[#8892a4]">
                         {step.description}
                       </p>
                     </div>
 
-                    {/* Mobile Only Dashboard Dashed line */}
+                    {/* Mobile Only Dashed line */}
                     {step.id !== 6 && (
                       <div className="md:hidden absolute w-[2px] h-[50px] left-1/2 -bottom-[50px] -translate-x-1/2 border-l-2 border-dashed z-0"
                            style={{ borderColor: step.color, opacity: 0.5 }} />
@@ -1460,7 +1500,6 @@ function OurProcessSection() {
 }
 
 // ===== CASE STUDIES =====
-// ===== CASE STUDY CARD =====
 function CaseStudyCard({ cs, index }) {
   const [activeChartIndex, setActiveChartIndex] = useState(0);
   const [activeModelIndex, setActiveModelIndex] = useState(0);
@@ -1476,8 +1515,6 @@ function CaseStudyCard({ cs, index }) {
     restDelta: 0.001
   });
   
-  const rotateZ = useTransform(smoothScroll, [0, 1], [-2, 2]);
-  const yOffset = useTransform(smoothScroll, [0, 0.5, 1], [15, 0, -15]);
   const opacity = useTransform(smoothScroll, [0, 0.15, 0.85, 1], [0.3, 1, 1, 0.3]);
   const PARALLAX_VECTORS = [
     { x: 45, y: 30 },
@@ -1527,13 +1564,22 @@ function CaseStudyCard({ cs, index }) {
                   <stop offset="95%" stopColor="var(--accent-secondary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
               <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
               <YAxis stroke="#64748b" fontSize={12} label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: 'rgba(26, 26, 46, 0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,240,255,0.5)', borderRadius: '12px', color: '#e2e8f0', boxShadow: '0 0 20px rgba(0,240,255,0.3), inset 0 0 20px rgba(0,240,255,0.1)' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: 'rgba(255, 255, 255, 0.95)', 
+                  backdropFilter: 'blur(8px)', 
+                  border: '1px solid rgba(226, 232, 240, 0.9)', 
+                  borderRadius: '12px', 
+                  color: '#0f172a', 
+                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' 
+                }} 
+              />
               <Area type="monotone" dataKey="predicted" stroke="var(--accent-primary)" fill={`url(#colorPredicted-${cs.id})`} strokeWidth={2} isAnimationActive={true} animationDuration={800} />
               <Area type="monotone" dataKey="actual" stroke="var(--accent-secondary)" fill={`url(#colorActual-${cs.id})`} strokeWidth={2} isAnimationActive={true} animationDuration={800} />
-              <Line type="monotone" dataKey="baseline" stroke="#475569" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+              <Line type="monotone" dataKey="baseline" stroke="#94a3b8" strokeDasharray="5 5" strokeWidth={1} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>
@@ -1546,11 +1592,20 @@ function CaseStudyCard({ cs, index }) {
       return (
         <ResponsiveContainer width="100%" height={250}>
           <RadarChart data={cs.data}>
-            <PolarGrid stroke="rgba(255,255,255,0.1)" />
+            <PolarGrid stroke="rgba(148, 163, 184, 0.3)" />
             <PolarAngleAxis dataKey="metric" stroke="#64748b" fontSize={11} />
-            <PolarRadiusAxis stroke="rgba(255,255,255,0.05)" domain={[0, 100]} tick={false} />
-            <Tooltip contentStyle={{ background: 'rgba(26, 26, 46, 0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,240,255,0.5)', borderRadius: '12px', color: '#e2e8f0', boxShadow: '0 0 20px rgba(0,240,255,0.3), inset 0 0 20px rgba(0,240,255,0.1)' }} />
-            <Radar dataKey="value" stroke="var(--accent-primary)" fill="var(--accent-primary)" fillOpacity={0.2} strokeWidth={2} isAnimationActive={true} animationDuration={1000} />
+            <PolarRadiusAxis stroke="rgba(148, 163, 184, 0.2)" domain={[0, 100]} tick={false} />
+            <Tooltip 
+              contentStyle={{ 
+                background: 'rgba(255, 255, 255, 0.95)', 
+                backdropFilter: 'blur(8px)', 
+                border: '1px solid rgba(226, 232, 240, 0.9)', 
+                borderRadius: '12px', 
+                color: '#0f172a', 
+                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' 
+              }} 
+            />
+            <Radar dataKey="value" stroke="var(--accent-primary)" fill="var(--accent-primary)" fillOpacity={0.25} strokeWidth={2} isAnimationActive={true} animationDuration={1000} />
           </RadarChart>
         </ResponsiveContainer>
       );
@@ -1567,21 +1622,21 @@ function CaseStudyCard({ cs, index }) {
             />
           </div>
 
-          <div className="flex items-center justify-between glass py-4 px-7 rounded-2xl border border-white/5 shadow-2xl shrink-0">
+          <div className="flex items-center justify-between glass py-4 px-7 rounded-2xl border border-slate-200/90 dark:border-white/5 shadow-md dark:shadow-2xl shrink-0 bg-white dark:bg-[rgba(13,21,38,0.5)]">
             <div className="flex flex-col">
-              <span className="text-[10px] text-gray-500 font-mono tracking-widest uppercase mb-1">Current Visualization</span>
+              <span className="text-[10px] text-slate-500 dark:text-gray-500 font-mono tracking-widest uppercase mb-1">Current Visualization</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white tracking-tight">{currentModel.title}</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{currentModel.title}</span>
                 <div className="flex gap-1.5 ml-2">
                   {cs.models.map((_, i) => (
-                    <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === activeModelIndex ? 'bg-[var(--accent-primary)] w-4' : 'bg-white/10'}`} />
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === activeModelIndex ? 'bg-blue-600 dark:bg-[#00ccff] w-4' : 'bg-slate-300 dark:bg-white/10'}`} />
                   ))}
                 </div>
               </div>
             </div>
             <button
               onClick={() => setActiveModelIndex((activeModelIndex + 1) % cs.models.length)}
-              className="flex items-center gap-2 group py-2.5 px-6 rounded-full bg-[var(--accent-primary)]/5 hover:bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 text-[var(--accent-primary)] transition-all duration-300 active:scale-95"
+              className="flex items-center gap-2 group py-2.5 px-6 rounded-full bg-blue-50 hover:bg-blue-100 dark:bg-cyan-500/5 dark:hover:bg-cyan-500/10 border border-blue-200 dark:border-cyan-500/20 text-blue-700 dark:text-[#00ccff] transition-all duration-300 active:scale-95 shadow-sm dark:shadow-none"
             >
               <span className="text-[11px] font-bold tracking-[0.15em] uppercase">Swap Perspective</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -1597,59 +1652,58 @@ function CaseStudyCard({ cs, index }) {
     <motion.div
       ref={ref}
       style={{ x: xTransform, y: yParallax, opacity: opacity }}
-      className="glass rounded-2xl border border-white/5 overflow-clip w-full relative z-10"
+      className="glass rounded-2xl border border-slate-200/90 dark:border-white/5 overflow-clip w-full relative z-10 bg-white dark:bg-[rgba(13,21,38,0.2)] shadow-xl dark:shadow-none"
     >
       <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 lg:min-h-[min(37.5rem,80vh)]">
         {/* Content Panel */}
-        <div className="p-6 sm:p-12 border-b lg:border-b-0 lg:border-r border-white/5 flex flex-col justify-center">
+        <div className="p-6 sm:p-12 border-b lg:border-b-0 lg:border-r border-slate-200/80 dark:border-white/5 flex flex-col justify-center">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight" style={{ textShadow: '0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(0,240,255,0.3)' }}>{cs.title}</h3>
-            {/* Logos fully removed per user request */}
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight dark:[text-shadow:0_0_30px_rgba(0,240,255,0.5),_0_0_60px_rgba(0,240,255,0.3)]">{cs.title}</h3>
           </div>
 
-          <p className="text-gray-300 mb-10 leading-[1.6] text-lg max-w-[65ch]">{cs.description}</p>
+          <p className="text-slate-600 dark:text-gray-300 mb-10 leading-[1.6] text-lg max-w-[65ch]">{cs.description}</p>
 
           <div className="grid gap-8 mb-10">
-            <div className="glass p-5 rounded-xl border border-white/5">
-              <h4 className="flex items-center text-xs font-mono font-bold text-[var(--accent-primary)] mb-2 tracking-[0.05em] uppercase"><Zap className="w-3.5 h-3.5 mr-2" /> The Challenge</h4>
-              <p className="text-sm text-gray-400 leading-[1.6]">{cs.challenge}</p>
+            <div className="glass p-5 rounded-xl border border-slate-200/80 dark:border-white/5 bg-slate-50 dark:bg-[rgba(13,21,38,0.2)]">
+              <h4 className="flex items-center text-xs font-mono font-bold text-blue-600 dark:text-[var(--accent-primary)] mb-2 tracking-[0.05em] uppercase"><Zap className="w-3.5 h-3.5 mr-2" /> The Challenge</h4>
+              <p className="text-sm text-slate-600 dark:text-gray-400 leading-[1.6]">{cs.challenge}</p>
             </div>
-            <div className="glass p-5 rounded-xl border border-white/5 relative overflow-hidden">
+            <div className="glass p-5 rounded-xl border border-slate-200/80 dark:border-white/5 relative overflow-hidden bg-slate-50 dark:bg-[rgba(13,21,38,0.2)]">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent-secondary)] rounded-full opacity-10 blur-xl" />
-              <h4 className="flex items-center text-xs font-mono font-bold text-[var(--accent-secondary)] mb-2 tracking-[0.05em] uppercase"><Cpu className="w-3.5 h-3.5 mr-2" /> Our Solution</h4>
-              <p className="text-sm text-gray-400 leading-[1.6]">{cs.solution}</p>
+              <h4 className="flex items-center text-xs font-mono font-bold text-purple-600 dark:text-[var(--accent-secondary)] mb-2 tracking-[0.05em] uppercase"><Cpu className="w-3.5 h-3.5 mr-2" /> Our Solution</h4>
+              <p className="text-sm text-slate-600 dark:text-gray-400 leading-[1.6]">{cs.solution}</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-10 border-t border-white/5 pt-8">
+          <div className="grid grid-cols-2 gap-4 mb-10 border-t border-slate-200/80 dark:border-white/5 pt-8">
             {cs.results.map((r, i) => (
               <div key={i} className="flex gap-3">
                 <div className="mt-0.5">
                   <Check className="w-4 h-4 text-[#10b981]" />
                 </div>
-                <span className="text-gray-300 text-sm leading-[1.6]">{r}</span>
+                <span className="text-slate-700 dark:text-gray-300 text-sm leading-[1.6] font-medium">{r}</span>
               </div>
             ))}
           </div>
           <div className="flex flex-wrap gap-2 mt-auto">
             {cs.tech.map(t => (
-              <span key={t} className="text-[11px] px-3 py-1.5 rounded-full bg-white/5 text-gray-400 border border-white/5 font-mono tracking-[0.05em] uppercase">{t}</span>
+              <span key={t} className="text-[11px] px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-gray-400 border border-slate-200 dark:border-white/5 font-mono tracking-[0.05em] uppercase font-medium">{t}</span>
             ))}
           </div>
         </div>
 
         {/* Chart Panel */}
-        <div className="p-6 sm:p-12 relative flex flex-col items-center justify-center min-h-[400px] h-full lg:min-h-[400px]">
+        <div className="p-6 sm:p-12 relative flex flex-col items-center justify-center min-h-[400px] h-full lg:min-h-[400px] bg-slate-50/50 dark:bg-transparent">
           <div className="w-full relative z-10 max-w-lg mx-auto">
-            <div className="flex items-center justify-between mb-6 pb-4">
-              <h4 className="text-[13px] font-mono text-gray-500 font-bold tracking-widest uppercase">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/60 dark:border-transparent">
+              <h4 className="text-[13px] font-mono text-slate-500 dark:text-gray-500 font-bold tracking-widest uppercase">
                 {cs.id === 1 ? (activeChartIndex === 0 ? 'Performance Metrics' : 'Model Comparison') :
                   cs.id === 2 ? 'Data Processing Efficiency' :
                     cs.id === 3 ? 'RAG System Metrics' : 'Interactive 3D Visuals'}
               </h4>
               {cs.id === 1 && (
                 <div className="flex gap-2">
-                  <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeChartIndex === 0 ? 'bg-[var(--accent-primary)] w-3' : 'bg-white/20'}`} />
-                  <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeChartIndex === 1 ? 'bg-[var(--accent-secondary)] w-3' : 'bg-white/20'}`} />
+                  <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeChartIndex === 0 ? 'bg-blue-600 dark:bg-[#00ccff] w-3' : 'bg-slate-300 dark:bg-white/20'}`} />
+                  <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${activeChartIndex === 1 ? 'bg-purple-600 dark:bg-[#7b2fff] w-3' : 'bg-slate-300 dark:bg-white/20'}`} />
                 </div>
               )}
             </div>
@@ -1673,20 +1727,20 @@ function CaseStudyCard({ cs, index }) {
 // ===== CASE STUDIES SECTION =====
 function CaseStudiesSection() {
   return (
-    <section id="case-studies" className="py-32 sm:py-40 px-4 sm:px-6 relative">
+    <section id="case-studies" className="py-32 sm:py-40 px-4 sm:px-6 relative border-t border-slate-200/80 dark:border-transparent">
       {/* Background glow wrapped to prevent overflow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute bottom-0 left-0 w-[clamp(20rem,40vw,40rem)] aspect-square bg-[var(--accent-primary)] rounded-full opacity-[0.02] blur-[150px]" />
+        <div className="absolute bottom-0 left-0 w-[clamp(20rem,40vw,40rem)] aspect-square bg-[var(--accent-primary)] rounded-full opacity-[0.03] blur-[150px]" />
       </div>
       <div className="max-w-7xl mx-auto">
         <AnimatedSection className="text-center mb-20">
-          <Badge variant="outline" className="mb-4 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] bg-[var(--accent-primary)]/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
+          <Badge variant="outline" className="mb-4 border-blue-200 dark:border-cyan-500/30 text-blue-700 dark:text-[#00ccff] bg-blue-50 dark:bg-cyan-500/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
             <Target className="w-3.5 h-3.5 mr-2" /> PROVEN RESULTS
           </Badge>
-          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
             Case{' '}<span className="gradient-text">Studies</span>
           </h2>
-          <p className="text-gray-300 max-w-[65ch] mx-auto leading-[1.6] text-base">Real-world projects that demonstrate our engineering depth and measurable impact.</p>
+          <p className="text-slate-600 dark:text-gray-300 max-w-[65ch] mx-auto leading-[1.6] text-base">Real-world projects that demonstrate our engineering depth and measurable impact.</p>
         </AnimatedSection>
 
         <div className="flex flex-col gap-12 lg:gap-24">
@@ -1702,24 +1756,20 @@ function CaseStudiesSection() {
 // ===== FOUNDER SECTION =====
 function FounderSection() {
   const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start']
-  });
 
   return (
     <motion.section
       ref={containerRef}
       id="founder"
-      className="py-32 sm:py-40 px-4 sm:px-6 relative overflow-hidden bg-black"
+      className="py-32 sm:py-40 px-4 sm:px-6 relative overflow-hidden bg-slate-100/60 dark:bg-black border-t border-slate-200/80 dark:border-white/5 transition-colors"
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(15rem,30vw,30rem)] aspect-square bg-[var(--accent-secondary)] rounded-full opacity-[0.03] blur-[120px]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(15rem,30vw,30rem)] aspect-square bg-[var(--accent-secondary)] rounded-full opacity-[0.04] blur-[120px]" />
       <div className="max-w-6xl mx-auto" style={{ perspective: '1000px' }}>
         <AnimatedSection className="text-center mb-16">
-          <Badge variant="outline" className="mb-4 border-[#ec4899]/30 text-[#ec4899] bg-[#ec4899]/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
+          <Badge variant="outline" className="mb-4 border-pink-200 dark:border-[#ec4899]/30 text-pink-700 dark:text-[#ec4899] bg-pink-50 dark:bg-[#ec4899]/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
             <Users className="w-3.5 h-3.5 mr-2" /> LEADERSHIP
           </Badge>
-          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-white uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
             Meet the{' '}<span className="gradient-text-warm">Founder</span>
           </h2>
         </AnimatedSection>
@@ -1731,20 +1781,20 @@ function FounderSection() {
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           className="w-full relative z-10"
         >
-          <div className="glass rounded-2xl border border-white/5 overflow-clip">
+          <div className="glass rounded-2xl border border-slate-200/90 dark:border-white/5 overflow-clip bg-white dark:bg-[rgba(13,21,38,0.2)] shadow-2xl dark:shadow-none">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
               {/* Photo */}
-              <div className="lg:col-span-2 relative overflow-clip">
+              <div className="lg:col-span-2 relative overflow-clip bg-slate-200 dark:bg-transparent">
                 <div className="aspect-square lg:aspect-auto lg:h-full relative">
-                  <img src="/founder.png" alt="Eppa Sai Vardhan Reddy" className="w-full h-full object-cover object-top opacity-90 mix-blend-screen" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-elevated)] via-transparent to-transparent" />
+                  <img src="/founder.png" alt="Eppa Sai Vardhan Reddy" className="w-full h-full object-cover object-top opacity-95 dark:opacity-90 dark:mix-blend-screen" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent dark:from-[var(--bg-elevated)] dark:via-transparent dark:to-transparent" />
                 </div>
               </div>
               {/* Bio */}
               <div className="lg:col-span-3 p-6 sm:p-10 flex flex-col justify-center">
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1 tracking-tight leading-tight">Eppa Sai Vardhan Reddy</h3>
-                <p className="text-[var(--accent-primary)] font-mono mb-5 text-xs tracking-[0.05em] uppercase font-semibold">Founder & Chief Architect</p>
-                <p className="text-gray-300 leading-[1.6] mb-8 max-w-[65ch] text-base">
+                <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Eppa Sai Vardhan Reddy</h3>
+                <p className="text-blue-600 dark:text-[var(--accent-primary)] font-mono mb-5 text-xs tracking-[0.05em] uppercase font-semibold">Founder & Chief Architect</p>
+                <p className="text-slate-600 dark:text-gray-300 leading-[1.6] mb-8 max-w-[65ch] text-base">
                   Adaptable and results-oriented Data Science and AI professional with deep expertise in machine learning, NLP, and predictive modeling.
                   A NASA Space Settlement Awardee (World 2nd Prize) and published IEEE researcher, with a proven track record of building AI systems
                   that deliver measurable business impact.
@@ -1753,45 +1803,45 @@ function FounderSection() {
                   <div className="flex items-start gap-3">
                     <Award className="w-5 h-5 text-[#f59e0b] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-white">NASA Space Settlement</p>
-                      <p className="text-xs text-gray-500">World 2nd Prize, 2018</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">NASA Space Settlement</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500">World 2nd Prize, 2018</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <BookOpen className="w-5 h-5 text-[var(--accent-secondary)] mt-0.5 flex-shrink-0" />
+                    <BookOpen className="w-5 h-5 text-purple-600 dark:text-[var(--accent-secondary)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-white">Published Research</p>
-                      <p className="text-xs text-gray-500">IEEE ICOECA 2024, IRJMETS 2025</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">Published Research</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500">IEEE ICOECA 2024, IRJMETS 2025</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Brain className="w-5 h-5 text-[#ec4899] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-white">AI & ML Specialist</p>
-                      <p className="text-xs text-gray-500">TensorFlow, Keras, Scikit-learn, NLP</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">AI & ML Specialist</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500">TensorFlow, Keras, Scikit-learn, NLP</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <TrendingUp className="w-5 h-5 text-[#10b981] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-white">Govt AI Projects</p>
-                      <p className="text-xs text-gray-500">T-SAT, Govt. of Telangana</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">Govt AI Projects</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500">T-SAT, Govt. of Telangana</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-6">
                   {['Python', 'TensorFlow', 'React', 'SQL', 'Power BI', 'Figma', 'NLP', 'Deep Learning'].map(s => (
-                    <span key={s} className="text-xs px-3 py-1 rounded-full bg-white/5 text-gray-400 border border-white/5">{s}</span>
+                    <span key={s} className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-gray-400 border border-slate-200 dark:border-white/5 font-medium">{s}</span>
                   ))}
                 </div>
                 <div className="flex items-center gap-4">
-                  <a href="mailto:contact@wearesignalzero.tech" className="text-gray-400 hover:text-[var(--accent-primary)] transition-colors">
+                  <a href="mailto:contact@wearesignalzero.tech" className="text-slate-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-[var(--accent-primary)] transition-colors">
                     <Mail className="w-5 h-5" />
                   </a>
-                  <a href="https://www.linkedin.com/in/eppa-sai-vardhan-reddy-5b71213a4" className="text-gray-400 hover:text-[var(--accent-primary)] transition-colors">
+                  <a href="https://www.linkedin.com/in/eppa-sai-vardhan-reddy-5b71213a4" className="text-slate-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-[var(--accent-primary)] transition-colors">
                     <Linkedin className="w-5 h-5" />
                   </a>
-                  <span className="text-sm text-gray-500 ml-2"><MapPin className="w-3.5 h-3.5 inline mr-1" />Hyderabad, India</span>
+                  <span className="text-sm text-slate-500 dark:text-gray-500 ml-2"><MapPin className="w-3.5 h-3.5 inline mr-1" />Hyderabad, India</span>
                 </div>
               </div>
             </div>
@@ -1805,13 +1855,6 @@ function FounderSection() {
 // ===== DISCOVERY FORM =====
 function DiscoveryForm() {
   const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start']
-  });
-
-  const essentialsX = useTransform(scrollYProgress, [0, 0.5, 1], [-20, 0, 20]);
-  const essentialsY = useTransform(scrollYProgress, [0, 0.5, 1], [10, 0, -10]);
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -1867,13 +1910,13 @@ function DiscoveryForm() {
       <motion.section id="discovery" ref={containerRef} className="py-24 sm:py-32 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <AnimatedSection>
-            <div className="glass rounded-2xl border border-[#10b981]/20 p-10">
+            <div className="glass rounded-2xl border border-[#10b981]/20 p-10 bg-white dark:bg-transparent shadow-xl">
               <div className="w-16 h-16 rounded-full bg-[#10b981]/10 flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-[#10b981]" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Project Inquiry Received!</h3>
-              <p className="text-gray-400 mb-6">Thank you, {form.fullName}. We&apos;ve sent a confirmation to {form.email}. Our team will review your project details and get back to you within 24 hours.</p>
-              <Button onClick={() => { setSubmitted(false); setStep(1); setForm({ fullName: '', company: '', website: '', email: '', services: [], elevatorPitch: '', budgetTier: '', timeline: '', dataState: '', aiReadiness: [5] }); }} variant="outline" className="border-white/20 text-white hover:border-[var(--accent-primary)]/50">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Project Inquiry Received!</h3>
+              <p className="text-slate-600 dark:text-gray-400 mb-6">Thank you, {form.fullName}. We&apos;ve sent a confirmation to {form.email}. Our team will review your project details and get back to you within 24 hours.</p>
+              <Button onClick={() => { setSubmitted(false); setStep(1); setForm({ fullName: '', company: '', website: '', email: '', services: [], elevatorPitch: '', budgetTier: '', timeline: '', dataState: '', aiReadiness: [5] }); }} variant="outline" className="border-slate-300 dark:border-white/20 text-slate-800 dark:text-white hover:border-blue-500 dark:hover:border-[var(--accent-primary)]/50">
                 Submit Another Inquiry
               </Button>
             </div>
@@ -1884,17 +1927,17 @@ function DiscoveryForm() {
   }
 
   return (
-    <motion.section id="discovery" ref={containerRef} className="py-32 sm:py-40 px-4 sm:px-6 relative overflow-hidden bg-black">
-      <div className="absolute top-0 left-0 w-[clamp(10rem,25vw,25rem)] aspect-square bg-[var(--accent-primary)] rounded-full opacity-[0.02] blur-[120px]" />
+    <motion.section id="discovery" ref={containerRef} className="py-32 sm:py-40 px-4 sm:px-6 relative overflow-hidden bg-slate-50/50 dark:bg-black border-t border-slate-200/80 dark:border-transparent transition-colors">
+      <div className="absolute top-0 left-0 w-[clamp(10rem,25vw,25rem)] aspect-square bg-[var(--accent-primary)] rounded-full opacity-[0.03] blur-[120px]" />
       <div className="max-w-3xl mx-auto">
         <AnimatedSection className="text-center mb-14">
-          <Badge variant="outline" className="mb-4 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] bg-[var(--accent-primary)]/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
+          <Badge variant="outline" className="mb-4 border-blue-200 dark:border-cyan-500/30 text-blue-700 dark:text-[#00ccff] bg-blue-50 dark:bg-cyan-500/5 px-5 py-1.5 text-xs font-mono tracking-[0.05em] uppercase rounded-full font-semibold">
             <Zap className="w-3.5 h-3.5 mr-2" /> PROJECT DISCOVERY
           </Badge>
-          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+          <h2 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white mb-5 uppercase" style={{ letterSpacing: '-0.02em', lineHeight: '1.2' }}>
             Start Your{' '}<span className="gradient-text">Project</span>
           </h2>
-          <p className="text-gray-300 max-w-[65ch] mx-auto leading-[1.6]">Tell us about your project and we&apos;ll craft a tailored solution.</p>
+          <p className="text-slate-600 dark:text-gray-300 max-w-[65ch] mx-auto leading-[1.6]">Tell us about your project and we&apos;ll craft a tailored solution.</p>
         </AnimatedSection>
 
         <AnimatedSection delay={0.2}>
@@ -1902,16 +1945,16 @@ function DiscoveryForm() {
           <div className="flex items-center justify-center gap-2 mb-10">
             {[1, 2, 3, 4].map(s => (
               <div key={s} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${s < step ? 'bg-[var(--accent-primary)] text-black' : s === step ? 'border-2 border-[var(--accent-primary)] text-[var(--accent-primary)]' : 'border border-white/20 text-gray-500'
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${s < step ? 'bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black' : s === step ? 'border-2 border-blue-600 dark:border-[#00ccff] text-blue-600 dark:text-[#00ccff] bg-white dark:bg-transparent font-bold' : 'border border-slate-300 dark:border-white/20 text-slate-400 dark:text-gray-500'
                   }`}>
                   {s < step ? <Check className="w-4 h-4" /> : s}
                 </div>
-                {s < 4 && <div className={`w-10 sm:w-16 h-0.5 mx-1 transition-all duration-300 ${s < step ? 'bg-[var(--accent-primary)]' : 'bg-white/10'}`} />}
+                {s < 4 && <div className={`w-10 sm:w-16 h-0.5 mx-1 transition-all duration-300 ${s < step ? 'bg-blue-600 dark:bg-[#00ccff]' : 'bg-slate-200 dark:bg-white/10'}`} />}
               </div>
             ))}
           </div>
 
-          <div className="glass rounded-2xl border border-white/5 p-8 sm:p-10" style={{ perspective: '1000px' }}>
+          <div className="glass rounded-2xl border border-slate-200/90 dark:border-white/5 p-8 sm:p-10 bg-white dark:bg-[rgba(13,21,38,0.2)] shadow-2xl dark:shadow-none" style={{ perspective: '1000px' }}>
             <AnimatePresence mode="wait">
               {/* Step 1: Essentials */}
               {step === 1 && (
@@ -1922,27 +1965,27 @@ function DiscoveryForm() {
                   exit={{ opacity: 0, rotateX: -90, y: -50, z: -100 }} 
                   viewport={{ once: false, amount: 0.1 }}
                   transition={{ duration: 0.6, type: 'spring', bounce: 0.4 }}
-                  className="glass p-6 sm:p-8 rounded-2xl border border-white/5"
+                  className="glass p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-white/5 bg-slate-50/70 dark:bg-[rgba(13,21,38,0.2)]"
                 >
-                  <h3 className="text-xl font-semibold text-white mb-6">The Essentials</h3>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">The Essentials</h3>
                   <div className="space-y-5">
                     <div>
-                      <label className="text-sm text-gray-400 mb-1.5 block">Full Name *</label>
-                      <Input value={form.fullName} onChange={e => updateField('fullName', e.target.value)} placeholder="John Doe" className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[var(--accent-primary)]/50" />
+                      <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Full Name *</label>
+                      <Input value={form.fullName} onChange={e => updateField('fullName', e.target.value)} placeholder="John Doe" className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:border-blue-500 dark:focus:border-cyan-500/50" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
-                        <label className="text-sm text-gray-400 mb-1.5 block">Company Name</label>
-                        <Input value={form.company} onChange={e => updateField('company', e.target.value)} placeholder="Acme Inc." className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[var(--accent-primary)]/50" />
+                        <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Company Name</label>
+                        <Input value={form.company} onChange={e => updateField('company', e.target.value)} placeholder="Acme Inc." className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:border-blue-500 dark:focus:border-cyan-500/50" />
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400 mb-1.5 block">Company Website</label>
-                        <Input value={form.website} onChange={e => updateField('website', e.target.value)} placeholder="https://acme.com" className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[var(--accent-primary)]/50" />
+                        <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Company Website</label>
+                        <Input value={form.website} onChange={e => updateField('website', e.target.value)} placeholder="https://acme.com" className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:border-blue-500 dark:focus:border-cyan-500/50" />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm text-gray-400 mb-1.5 block">Work Email *</label>
-                      <Input type="email" value={form.email} onChange={e => updateField('email', e.target.value)} placeholder="john@acme.com" className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[var(--accent-primary)]/50" />
+                      <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Work Email *</label>
+                      <Input type="email" value={form.email} onChange={e => updateField('email', e.target.value)} placeholder="john@acme.com" className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:border-blue-500 dark:focus:border-cyan-500/50" />
                     </div>
                   </div>
                 </motion.div>
@@ -1951,22 +1994,22 @@ function DiscoveryForm() {
               {/* Step 2: Services */}
               {step === 2 && (
                 <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-                  <h3 className="text-xl font-semibold text-white mb-2">Core Engineering Selection</h3>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Core Engineering Selection</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {SERVICES.map(s => (
                       <button
                         key={s.id}
                         onClick={() => toggleService(s.id)}
                         className={`flex items-center gap-3 p-4 rounded-xl border transition-all duration-300 text-left ${form.services.includes(s.id)
-                          ? 'border-[var(--accent-primary)]/50 bg-[var(--accent-primary)]/5'
-                          : 'border-white/5 bg-white/[0.02] hover:border-white/10'
+                          ? 'border-blue-600 dark:border-cyan-500/50 bg-blue-50 dark:bg-cyan-500/10 text-blue-900 dark:text-white shadow-sm'
+                          : 'border-slate-200 dark:border-white/5 bg-slate-50/60 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/10'
                           }`}
                       >
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${s.color}15` }}>
                           <s.icon className="w-4 h-4" style={{ color: s.color }} />
                         </div>
-                        <span className={`text-sm font-medium ${form.services.includes(s.id) ? 'text-white' : 'text-gray-400'}`}>{s.title}</span>
-                        {form.services.includes(s.id) && <Check className="w-4 h-4 text-[var(--accent-primary)] ml-auto" />}
+                        <span className={`text-sm font-medium ${form.services.includes(s.id) ? 'text-blue-900 dark:text-white font-semibold' : 'text-slate-700 dark:text-gray-400'}`}>{s.title}</span>
+                        {form.services.includes(s.id) && <Check className="w-4 h-4 text-blue-600 dark:text-[#00ccff] ml-auto" />}
                       </button>
                     ))}
                   </div>
@@ -1976,39 +2019,39 @@ function DiscoveryForm() {
               {/* Step 3: Parameters */}
               {step === 3 && (
                 <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-                  <h3 className="text-xl font-semibold text-white mb-6">Project Parameters</h3>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Project Parameters</h3>
                   <div className="space-y-5">
                     <div>
-                      <label className="text-sm text-gray-400 mb-1.5 block">Elevator Pitch *</label>
+                      <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Elevator Pitch *</label>
                       <Textarea
                         value={form.elevatorPitch}
                         onChange={e => updateField('elevatorPitch', e.target.value)}
                         placeholder="In 2-3 sentences, what is the core problem you are trying to solve?"
                         rows={3}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-[var(--accent-primary)]/50 resize-none"
+                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:border-blue-500 dark:focus:border-[var(--accent-primary)]/50 resize-none"
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
-                        <label className="text-sm text-gray-400 mb-1.5 block">Budget Tier *</label>
+                        <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Budget Tier *</label>
                         <select
                           value={form.budgetTier}
                           onChange={e => updateField('budgetTier', e.target.value)}
-                          className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white text-sm focus:border-[var(--accent-primary)]/50 focus:outline-none appearance-none"
+                          className="w-full h-10 px-3 rounded-md bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:border-blue-500 dark:focus:border-[var(--accent-primary)]/50 focus:outline-none"
                         >
-                          <option value="" className="bg-[#0a0a0f]">Select budget range</option>
-                          {BUDGET_OPTIONS.map(o => <option key={o} value={o} className="bg-[#0a0a0f]">{o}</option>)}
+                          <option value="" className="bg-white text-slate-900 dark:bg-[#0a0a0f] dark:text-white">Select budget range</option>
+                          {BUDGET_OPTIONS.map(o => <option key={o} value={o} className="bg-white text-slate-900 dark:bg-[#0a0a0f] dark:text-white">{o}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400 mb-1.5 block">Timeline *</label>
+                        <label className="text-sm text-slate-700 dark:text-gray-400 mb-1.5 block font-medium">Timeline *</label>
                         <select
                           value={form.timeline}
                           onChange={e => updateField('timeline', e.target.value)}
-                          className="w-full h-10 px-3 rounded-md bg-white/5 border border-white/10 text-white text-sm focus:border-[var(--accent-primary)]/50 focus:outline-none appearance-none"
+                          className="w-full h-10 px-3 rounded-md bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-sm focus:border-blue-500 dark:focus:border-[var(--accent-primary)]/50 focus:outline-none"
                         >
-                          <option value="" className="bg-[#0a0a0f]">Select timeline</option>
-                          {TIMELINE_OPTIONS.map(o => <option key={o} value={o} className="bg-[#0a0a0f]">{o}</option>)}
+                          <option value="" className="bg-white text-slate-900 dark:bg-[#0a0a0f] dark:text-white">Select timeline</option>
+                          {TIMELINE_OPTIONS.map(o => <option key={o} value={o} className="bg-white text-slate-900 dark:bg-[#0a0a0f] dark:text-white">{o}</option>)}
                         </select>
                       </div>
                     </div>
@@ -2019,17 +2062,17 @@ function DiscoveryForm() {
               {/* Step 4: Deep Context */}
               {step === 4 && (
                 <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-                  <h3 className="text-xl font-semibold text-white mb-2">Deep Context</h3>
-                  <p className="text-sm text-gray-400 mb-6">Help us understand your current state better.</p>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Deep Context</h3>
+                  <p className="text-sm text-slate-600 dark:text-gray-400 mb-6">Help us understand your current state better.</p>
                   <div className="space-y-6">
                     <div>
-                      <label className="text-sm text-gray-400 mb-3 block">What state is your company&apos;s data currently in?</label>
+                      <label className="text-sm text-slate-700 dark:text-gray-400 mb-3 block font-medium">What state is your company&apos;s data currently in?</label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {DATA_STATE_OPTIONS.map(opt => (
                           <button
                             key={opt}
                             onClick={() => updateField('dataState', opt)}
-                            className={`p-3 rounded-xl border text-sm text-left transition-all duration-300 ${form.dataState === opt ? 'border-[var(--accent-primary)]/50 bg-[var(--accent-primary)]/5 text-white' : 'border-white/5 text-gray-400 hover:border-white/10'
+                            className={`p-3 rounded-xl border text-sm text-left transition-all duration-300 ${form.dataState === opt ? 'border-blue-600 dark:border-cyan-500/50 bg-blue-50 dark:bg-cyan-500/10 text-blue-900 dark:text-white font-semibold' : 'border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-transparent text-slate-700 dark:text-gray-400 hover:border-slate-300 dark:hover:border-white/10'
                               }`}
                           >
                             {opt}
@@ -2038,7 +2081,7 @@ function DiscoveryForm() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm text-gray-400 mb-3 block">How AI-Ready are your business operations?</label>
+                      <label className="text-sm text-slate-700 dark:text-gray-400 mb-3 block font-medium">How AI-Ready are your business operations?</label>
                       <div className="px-2">
                         <Slider
                           value={form.aiReadiness}
@@ -2049,9 +2092,9 @@ function DiscoveryForm() {
                           className="w-full"
                         />
                         <div className="flex justify-between mt-2">
-                          <span className="text-xs text-gray-500">1 - Not at all</span>
-                          <span className="text-sm font-mono text-[var(--accent-primary)]">{form.aiReadiness[0]}/10</span>
-                          <span className="text-xs text-gray-500">10 - Fully ready</span>
+                          <span className="text-xs text-slate-500">1 - Not at all</span>
+                          <span className="text-sm font-mono text-blue-600 dark:text-[#00ccff] font-bold">{form.aiReadiness[0]}/10</span>
+                          <span className="text-xs text-slate-500">10 - Fully ready</span>
                         </div>
                       </div>
                     </div>
@@ -2060,14 +2103,14 @@ function DiscoveryForm() {
               )}
             </AnimatePresence>
 
-            {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+            {error && <p className="text-red-500 dark:text-red-400 text-sm mt-4 font-medium">{error}</p>}
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200 dark:border-white/5">
               <Button
                 onClick={() => setStep(s => Math.max(1, s - 1))}
                 variant="outline"
-                className={`border-white/10 text-gray-400 hover:text-white ${step === 1 ? 'invisible' : ''}`}
+                className={`border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white ${step === 1 ? 'invisible' : ''}`}
               >
                 <ChevronLeft className="w-4 h-4 mr-1" /> Back
               </Button>
@@ -2075,7 +2118,7 @@ function DiscoveryForm() {
                 <Button
                   onClick={() => setStep(s => s + 1)}
                   disabled={!canProceed()}
-                  className="bg-[var(--accent-primary)] text-black hover:bg-[#00d4e0] disabled:opacity-30 font-semibold"
+                  className="bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black hover:bg-blue-700 dark:hover:bg-[#00d4e0] disabled:opacity-40 font-semibold shadow-sm hover:shadow-md dark:shadow-none"
                 >
                   Continue <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -2083,7 +2126,7 @@ function DiscoveryForm() {
                 <Button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="bg-[var(--accent-primary)] text-black hover:bg-[#00d4e0] disabled:opacity-50 font-semibold px-8"
+                  className="bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black hover:bg-blue-700 dark:hover:bg-[#00d4e0] disabled:opacity-50 font-semibold px-8 shadow-sm hover:shadow-md dark:shadow-none"
                 >
                   {submitting ? 'Submitting...' : 'Submit Inquiry'} {!submitting && <Send className="w-4 h-4 ml-2" />}
                 </Button>
@@ -2110,7 +2153,7 @@ function ChatMarkdown({ text }) {
           const content = trimmed.replace(/^[-*•]\s/, '');
           return (
             <div key={i} className="flex items-start gap-2 pl-1">
-              <span className="text-[var(--accent-primary)] text-[10px] mt-[5px] flex-shrink-0">●</span>
+              <span className="text-blue-600 dark:text-[var(--accent-primary)] text-[10px] mt-[5px] flex-shrink-0">●</span>
               <span>{renderInline(content)}</span>
             </div>
           );
@@ -2121,7 +2164,7 @@ function ChatMarkdown({ text }) {
           const content = trimmed.replace(/^\d+[\.\)]\s/, '');
           return (
             <div key={i} className="flex items-start gap-2 pl-1">
-              <span className="text-[var(--accent-primary)] text-xs font-mono mt-[1px] flex-shrink-0 w-4">{num}.</span>
+              <span className="text-blue-600 dark:text-[var(--accent-primary)] text-xs font-mono mt-[1px] flex-shrink-0 w-4">{num}.</span>
               <span>{renderInline(content)}</span>
             </div>
           );
@@ -2133,18 +2176,16 @@ function ChatMarkdown({ text }) {
 }
 
 function renderInline(text) {
-  // Split by **bold** patterns
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-semibold text-slate-900 dark:text-white">{part.slice(2, -2)}</strong>;
     }
-    // Handle *italic*
     const italicParts = part.split(/(\*[^*]+\*)/g);
     if (italicParts.length > 1) {
       return italicParts.map((ip, j) => {
         if (ip.startsWith('*') && ip.endsWith('*') && ip.length > 2) {
-          return <em key={`${i}-${j}`} className="italic text-gray-200">{ip.slice(1, -1)}</em>;
+          return <em key={`${i}-${j}`} className="italic text-slate-700 dark:text-gray-200">{ip.slice(1, -1)}</em>;
         }
         return ip;
       });
@@ -2303,7 +2344,6 @@ function ChatWidget() {
 
     lastSpokenMessageIndexRef.current = lastMessageIndex;
 
-    // Cancel any ongoing speech and speak this message, tracking progress so volume changes can restart the remainder
     window.speechSynthesis.cancel();
 
     const speakFrom = (text, startChar = 0) => {
@@ -2325,10 +2365,8 @@ function ChatWidget() {
       }
       utterance.volume = voiceVolume;
 
-      // Update lastCharIndexRef on boundary events when available
       utterance.onboundary = (ev) => {
         if (ev && typeof ev.charIndex === 'number') {
-          // ev.charIndex is relative to the spoken utterance chunk; compute absolute index
           lastCharIndexRef.current = startChar + ev.charIndex;
         }
       };
@@ -2345,17 +2383,14 @@ function ChatWidget() {
     speakFrom(lastMessage.text, 0);
   }, [messages, loading, ttsSupported, voiceRepliesEnabled, voiceVolume]);
 
-  // If the user adjusts the volume while an utterance is playing, cancel and restart from last boundary
   useEffect(() => {
     if (!('speechSynthesis' in window)) return;
     const isSpeaking = window.speechSynthesis.speaking && currentUtteranceRef.current;
     if (!isSpeaking) return;
-    // get remaining text and restart
     const text = currentUtteranceTextRef.current || '';
     const charIndex = lastCharIndexRef.current || 0;
     window.speechSynthesis.cancel();
     if (charIndex < text.length) {
-      // small debounce to avoid thrashing if slider rapidly moves
       const id = setTimeout(() => {
         const utter = new SpeechSynthesisUtterance(text.slice(charIndex));
         currentUtteranceRef.current = utter;
@@ -2384,10 +2419,7 @@ function ChatWidget() {
     }
   }, [voiceVolume]);
 
-  
-
   useEffect(() => {
-    // keep pending slider in sync when voiceVolume changes programmatically
     setPendingVoiceVolume(Math.round(voiceVolume * 100));
 
     if (open && messages.length === 0) {
@@ -2455,8 +2487,9 @@ function ChatWidget() {
       {/* Toggle button */}
       <motion.button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-6 z-50 w-14 h-14 rounded-full bg-[var(--accent-primary)] text-[#050810] flex items-center justify-center shadow-lg shadow-[var(--accent-primary)]/30 hover:scale-110 transition-transform"
+        className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-6 z-50 w-14 h-14 rounded-full bg-blue-600 dark:bg-[#00ccff] text-white dark:text-[#050810] flex items-center justify-center shadow-lg hover:shadow-xl dark:shadow-[0_0_20px_rgba(0,204,255,0.3)] hover:scale-110 transition-all"
         whileTap={{ scale: 0.9 }}
+        aria-label="Open chat widget"
       >
         {open ? <X className="w-6 h-6 stroke-[3px]" /> : <MessageSquare className="w-6 h-6 stroke-[2.5px]" />}
       </motion.button>
@@ -2469,18 +2502,18 @@ function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.94 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)] origin-bottom-right glass-strong rounded-[28px] border border-white/10 overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)] origin-bottom-right glass-strong rounded-[28px] border border-slate-200/90 dark:border-white/10 overflow-hidden shadow-2xl bg-white/95 dark:bg-[rgba(13,21,38,0.5)]"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-[var(--accent-primary)]/10 to-[var(--accent-secondary)]/10 px-4 py-3 border-b border-white/5">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-cyan-500/10 dark:to-purple-500/10 px-4 py-3 border-b border-slate-200/80 dark:border-white/5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 text-[var(--accent-primary)]" />
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-cyan-500/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-blue-600 dark:text-[#00ccff]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white leading-none">Signal Zero AI</p>
-                    <p className="text-[11px] text-gray-400 mt-1 truncate">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none">Signal Zero AI</p>
+                    <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1 truncate">
                       {voiceError
                         ? voiceError
                         : listening
@@ -2499,7 +2532,7 @@ function ChatWidget() {
                     onClick={toggleVoiceInput}
                     disabled={!voiceSupported || loading}
                     title={voiceSupported ? (listening ? 'Stop listening' : 'Speak to Signal Zero AI') : 'Voice input not supported in this browser'}
-                    className={`h-9 w-9 rounded-full border border-white/10 ${listening ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                    className={`h-9 w-9 rounded-full border border-slate-200 dark:border-white/10 ${listening ? 'bg-blue-100 dark:bg-cyan-500/20 text-blue-600 dark:text-[#00ccff]' : 'text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'}`}
                   >
                     {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </Button>
@@ -2510,14 +2543,14 @@ function ChatWidget() {
                     onClick={() => setVoiceRepliesEnabled(prev => !prev)}
                     disabled={!ttsSupported}
                     title={ttsSupported ? (voiceRepliesEnabled ? 'Turn off spoken responses' : 'Turn on spoken responses') : 'Speech synthesis not supported in this browser'}
-                    className={`h-9 w-9 rounded-full border border-white/10 ${voiceRepliesEnabled ? 'bg-white/5 text-[var(--accent-primary)]' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                    className={`h-9 w-9 rounded-full border border-slate-200 dark:border-white/10 ${voiceRepliesEnabled ? 'bg-blue-50 dark:bg-white/5 text-blue-600 dark:text-[#00ccff]' : 'text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'}`}
                   >
                     {voiceRepliesEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-3">
-                <Volume2 className="w-4 h-4 text-gray-400 shrink-0" />
+                <Volume2 className="w-4 h-4 text-slate-500 dark:text-gray-400 shrink-0" />
                 <input
                   type="range"
                   min={0}
@@ -2532,13 +2565,12 @@ function ChatWidget() {
                   onBlur={() => { draggingVolumeRef.current = false; setVoiceVolume(Number(pendingVoiceVolume) / 100); }}
                   onKeyUp={(e) => { if (e.key === 'Enter') setVoiceVolume(Number(pendingVoiceVolume) / 100); }}
                   disabled={!ttsSupported || !voiceRepliesEnabled}
-                  className="flex-1 h-1 appearance-none bg-white/10 rounded-lg"
+                  className="flex-1 h-1 appearance-none bg-slate-200 dark:bg-white/10 rounded-lg accent-blue-600 dark:accent-cyan-400"
                   aria-label="Voice volume"
                 />
-                <span className="w-10 text-right text-[11px] text-gray-400 tabular-nums">
+                <span className="w-10 text-right text-[11px] text-slate-500 dark:text-gray-400 tabular-nums font-mono">
                   {Math.round(voiceVolume * 100)}%
                 </span>
-                
               </div>
             </div>
 
@@ -2547,8 +2579,8 @@ function ChatWidget() {
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed ${msg.role === 'user'
-                    ? 'bg-[var(--accent-primary)] text-black rounded-br-md'
-                    : 'bg-white/5 text-[#9CA3AF] rounded-bl-md border border-white/5'
+                    ? 'bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black rounded-br-md shadow-sm'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-[#9CA3AF] rounded-bl-md border border-slate-200/80 dark:border-white/5'
                     }`}>
                     {msg.role === 'user' ? msg.text : <ChatMarkdown text={msg.text} />}
                   </div>
@@ -2556,11 +2588,11 @@ function ChatWidget() {
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-white/5 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+                  <div className="bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)]/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)]/50 animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)]/50 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-blue-500/60 dark:bg-cyan-400/50 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-blue-500/60 dark:bg-cyan-400/50 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-blue-500/60 dark:bg-cyan-400/50 animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -2568,9 +2600,9 @@ function ChatWidget() {
             </div>
 
             {/* Input */}
-            <div className="p-2.5 border-t border-white/5">
+            <div className="p-2.5 border-t border-slate-200/80 dark:border-white/5">
               {voiceError && (
-                <p className="mb-2 px-1 text-[11px] leading-relaxed text-amber-300/90">
+                <p className="mb-2 px-1 text-[11px] leading-relaxed text-amber-600 dark:text-amber-300/90 font-medium">
                   {voiceError}
                 </p>
               )}
@@ -2579,9 +2611,9 @@ function ChatWidget() {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   placeholder="Ask about our services..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 text-sm flex-1 focus:border-[var(--accent-primary)]/50 h-9"
+                  className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 text-sm flex-1 focus:border-blue-500 dark:focus:border-cyan-500/50 h-9"
                 />
-                <Button type="submit" disabled={!input.trim() || loading} className="bg-[var(--accent-primary)] text-black hover:bg-[#00d4e0] px-3 disabled:opacity-30 h-9">
+                <Button type="submit" disabled={!input.trim() || loading} className="bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black hover:bg-blue-700 dark:hover:bg-[#00d4e0] px-3 disabled:opacity-40 h-9 shadow-sm">
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
@@ -2630,51 +2662,51 @@ function CookieBanner() {
             exit={{ y: 100, opacity: 0 }}
             className="fixed bottom-0 left-0 right-0 z-[100] pt-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
           >
-            <div className="max-w-4xl mx-auto glass-strong rounded-2xl border border-white/10 p-6">
+            <div className="max-w-4xl mx-auto glass-strong rounded-2xl border border-slate-200/90 dark:border-white/10 p-6 bg-white/95 dark:bg-[rgba(13,21,38,0.5)] shadow-2xl">
               {!showDetails ? (
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Shield className="w-4 h-4 text-[var(--accent-primary)]" />
-                      <span className="text-sm font-semibold text-white">Cookie Preferences</span>
+                      <Shield className="w-4 h-4 text-blue-600 dark:text-[var(--accent-primary)]" />
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">Cookie Preferences</span>
                     </div>
-                    <p className="text-xs text-gray-400 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
                       We use cookies to enhance your browsing experience. You can customize your preferences or accept all.
-                      <button onClick={() => setShowPrivacy(true)} className="text-[var(--accent-primary)] hover:underline ml-1">Privacy Policy</button>
+                      <button onClick={() => setShowPrivacy(true)} className="text-blue-600 dark:text-[#00ccff] hover:underline ml-1 font-medium">Privacy Policy</button>
                       {' | '}
-                      <button onClick={() => setShowImpressum(true)} className="text-[var(--accent-primary)] hover:underline">Impressum</button>
+                      <button onClick={() => setShowImpressum(true)} className="text-blue-600 dark:text-[#00ccff] hover:underline font-medium">Impressum</button>
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button onClick={() => setShowDetails(true)} variant="outline" className="border-white/10 text-gray-400 text-xs h-9 px-4 hover:text-white">Customize</Button>
-                    <Button onClick={rejectAll} variant="outline" className="border-white/10 text-gray-400 text-xs h-9 px-4 hover:text-white">Reject All</Button>
-                    <Button onClick={acceptAll} className="bg-[var(--accent-primary)] text-black text-xs h-9 px-4 font-semibold hover:bg-[#00d4e0]">Accept All</Button>
+                    <Button onClick={() => setShowDetails(true)} variant="outline" className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-400 text-xs h-9 px-4 hover:text-slate-900 dark:hover:text-white">Customize</Button>
+                    <Button onClick={rejectAll} variant="outline" className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-400 text-xs h-9 px-4 hover:text-slate-900 dark:hover:text-white">Reject All</Button>
+                    <Button onClick={acceptAll} className="bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black text-xs h-9 px-4 font-semibold hover:bg-blue-700 dark:hover:bg-[#00d4e0] shadow-sm">Accept All</Button>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-4">Cookie Settings</h4>
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Cookie Settings</h4>
                   <div className="space-y-3 mb-6">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                      <div><p className="text-sm text-white">Essential Cookies</p><p className="text-xs text-gray-500">Required for the website to function</p></div>
-                      <span className="text-xs text-gray-400">Always on</span>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-transparent">
+                      <div><p className="text-sm font-medium text-slate-900 dark:text-white">Essential Cookies</p><p className="text-xs text-slate-500 dark:text-gray-500">Required for the website to function</p></div>
+                      <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">Always on</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                      <div><p className="text-sm text-white">Analytics Cookies</p><p className="text-xs text-gray-500">Help us understand usage patterns</p></div>
-                      <button onClick={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))} className={`w-10 h-5 rounded-full transition-colors ${prefs.analytics ? 'bg-[var(--accent-primary)]' : 'bg-white/20'}`}>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-transparent">
+                      <div><p className="text-sm font-medium text-slate-900 dark:text-white">Analytics Cookies</p><p className="text-xs text-slate-500 dark:text-gray-500">Help us understand usage patterns</p></div>
+                      <button onClick={() => setPrefs(p => ({ ...p, analytics: !p.analytics }))} className={`w-10 h-5 rounded-full transition-colors ${prefs.analytics ? 'bg-blue-600 dark:bg-[#00ccff]' : 'bg-slate-300 dark:bg-white/20'}`}>
                         <div className={`w-4 h-4 rounded-full bg-white transition-transform ${prefs.analytics ? 'translate-x-5' : 'translate-x-0.5'}`} />
                       </button>
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                      <div><p className="text-sm text-white">Marketing Cookies</p><p className="text-xs text-gray-500">Used for targeted advertising</p></div>
-                      <button onClick={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))} className={`w-10 h-5 rounded-full transition-colors ${prefs.marketing ? 'bg-[var(--accent-primary)]' : 'bg-white/20'}`}>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-transparent">
+                      <div><p className="text-sm font-medium text-slate-900 dark:text-white">Marketing Cookies</p><p className="text-xs text-slate-500 dark:text-gray-500">Used for targeted advertising</p></div>
+                      <button onClick={() => setPrefs(p => ({ ...p, marketing: !p.marketing }))} className={`w-10 h-5 rounded-full transition-colors ${prefs.marketing ? 'bg-blue-600 dark:bg-[#00ccff]' : 'bg-slate-300 dark:bg-white/20'}`}>
                         <div className={`w-4 h-4 rounded-full bg-white transition-transform ${prefs.marketing ? 'translate-x-5' : 'translate-x-0.5'}`} />
                       </button>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button onClick={() => setShowDetails(false)} variant="outline" className="border-white/10 text-gray-400 text-xs h-9">Back</Button>
-                    <Button onClick={savePrefs} className="bg-[var(--accent-primary)] text-black text-xs h-9 px-6 font-semibold">Save Preferences</Button>
+                    <Button onClick={() => setShowDetails(false)} variant="outline" className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-400 text-xs h-9">Back</Button>
+                    <Button onClick={savePrefs} className="bg-blue-600 dark:bg-[#00ccff] text-white dark:text-black text-xs h-9 px-6 font-semibold shadow-sm">Save Preferences</Button>
                   </div>
                 </div>
               )}
@@ -2687,18 +2719,18 @@ function CookieBanner() {
       <AnimatePresence>
         {showPrivacy && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-[#0d0d15] border border-white/10 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white dark:bg-[#0d0d15] border border-slate-200 dark:border-white/10 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8 shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Privacy Policy</h3>
-                <button onClick={() => setShowPrivacy(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Privacy Policy</h3>
+                <button onClick={() => setShowPrivacy(false)} className="text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"><X className="w-5 h-5" /></button>
               </div>
-              <div className="text-sm text-gray-400 space-y-4 leading-relaxed">
-                <p><strong className="text-white">Data Collection:</strong> We collect information you provide through our Project Discovery form, including your name, email, company details, and project requirements. This data is used solely to evaluate your project needs and provide tailored solutions.</p>
-                <p><strong className="text-white">Cookie Usage:</strong> We use essential cookies for site functionality, analytics cookies to understand usage patterns, and optional marketing cookies for personalized experiences. You can control these through our cookie preferences.</p>
-                <p><strong className="text-white">Third-Party Services:</strong> We use Google Gemini AI for our chatbot assistant and Resend for email notifications. These services process data according to their respective privacy policies.</p>
-                <p><strong className="text-white">Data Storage:</strong> Your data is stored securely in our database with industry-standard encryption. We retain data only as long as necessary for business purposes.</p>
-                <p><strong className="text-white">Your Rights (GDPR):</strong> Under GDPR, you have the right to access, rectify, erase, restrict processing, and port your data. Contact us at contact@wearesignalzero.tech to exercise these rights.</p>
-                <p><strong className="text-white">Contact:</strong> Signal Zero, Hyderabad, India. Email: contact@wearesignalzero.tech</p>
+              <div className="text-sm text-slate-600 dark:text-gray-400 space-y-4 leading-relaxed">
+                <p><strong className="text-slate-900 dark:text-white">Data Collection:</strong> We collect information you provide through our Project Discovery form, including your name, email, company details, and project requirements. This data is used solely to evaluate your project needs and provide tailored solutions.</p>
+                <p><strong className="text-slate-900 dark:text-white">Cookie Usage:</strong> We use essential cookies for site functionality, analytics cookies to understand usage patterns, and optional marketing cookies for personalized experiences. You can control these through our cookie preferences.</p>
+                <p><strong className="text-slate-900 dark:text-white">Third-Party Services:</strong> We use Google Gemini AI for our chatbot assistant and Resend for email notifications. These services process data according to their respective privacy policies.</p>
+                <p><strong className="text-slate-900 dark:text-white">Data Storage:</strong> Your data is stored securely in our database with industry-standard encryption. We retain data only as long as necessary for business purposes.</p>
+                <p><strong className="text-slate-900 dark:text-white">Your Rights (GDPR):</strong> Under GDPR, you have the right to access, rectify, erase, restrict processing, and port your data. Contact us at contact@wearesignalzero.tech to exercise these rights.</p>
+                <p><strong className="text-slate-900 dark:text-white">Contact:</strong> Signal Zero, Hyderabad, India. Email: contact@wearesignalzero.tech</p>
               </div>
             </motion.div>
           </motion.div>
@@ -2709,18 +2741,18 @@ function CookieBanner() {
       <AnimatePresence>
         {showImpressum && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-[#0d0d15] border border-white/10 rounded-2xl max-w-lg w-full p-8">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white dark:bg-[#0d0d15] border border-slate-200 dark:border-white/10 rounded-2xl max-w-lg w-full p-8 shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Impressum</h3>
-                <button onClick={() => setShowImpressum(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Impressum</h3>
+                <button onClick={() => setShowImpressum(false)} className="text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"><X className="w-5 h-5" /></button>
               </div>
-              <div className="text-sm text-gray-400 space-y-3 leading-relaxed">
-                <p><strong className="text-white">Company:</strong> Signal Zero</p>
-                <p><strong className="text-white">Founder & Owner:</strong> Eppa Sai Vardhan Reddy</p>
-                <p><strong className="text-white">Address:</strong> Hyderabad, Telangana, India</p>
-                <p><strong className="text-white">Email:</strong> contact@wearesignalzero.tech</p>
-                <p><strong className="text-white">Phone:</strong> (+91) 9347302648</p>
-                <p><strong className="text-white">Service:</strong> AI & Data Engineering Consulting and Development</p>
+              <div className="text-sm text-slate-600 dark:text-gray-400 space-y-3 leading-relaxed">
+                <p><strong className="text-slate-900 dark:text-white">Company:</strong> Signal Zero</p>
+                <p><strong className="text-slate-900 dark:text-white">Founder & Owner:</strong> Eppa Sai Vardhan Reddy</p>
+                <p><strong className="text-slate-900 dark:text-white">Address:</strong> Hyderabad, Telangana, India</p>
+                <p><strong className="text-slate-900 dark:text-white">Email:</strong> contact@wearesignalzero.tech</p>
+                <p><strong className="text-slate-900 dark:text-white">Phone:</strong> (+91) 9347302648</p>
+                <p><strong className="text-slate-900 dark:text-white">Service:</strong> AI & Data Engineering Consulting and Development</p>
               </div>
             </motion.div>
           </motion.div>
@@ -2733,48 +2765,48 @@ function CookieBanner() {
 // ===== FOOTER =====
 function Footer() {
   return (
-    <footer className="py-16 px-4 sm:px-6 border-t border-white/5">
+    <footer className="py-16 px-4 sm:px-6 border-t border-slate-200 dark:border-white/5 bg-slate-100/70 dark:bg-transparent transition-colors">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <SignalZeroLogo className="w-8 h-8" />
               <div>
-                <span className="text-white font-bold tracking-widest">SIGNAL</span>
+                <span className="text-slate-900 dark:text-white font-bold tracking-widest">SIGNAL</span>
                 <span className="text-[var(--accent-primary)] font-bold tracking-widest ml-1">ZERO</span>
               </div>
             </div>
-            <p className="text-sm text-gray-500 max-w-sm leading-relaxed mb-4">
+            <p className="text-sm text-slate-600 dark:text-gray-500 max-w-sm leading-relaxed mb-4">
               Engineering intelligent systems that transform raw data into competitive advantage. Premium AI & Data solutions for forward-thinking businesses.
             </p>
             <div className="flex items-center gap-4">
-              <a href="mailto:contact@wearesignalzero.tech" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Mail className="w-4 h-4" /></a>
-              <a href="https://www.linkedin.com/in/eppa-sai-vardhan-reddy-5b71213a4" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Linkedin className="w-4 h-4" /></a>
-              <a href="#" className="text-gray-500 hover:text-[var(--accent-primary)] transition-colors"><Globe className="w-4 h-4" /></a>
+              <a href="mailto:contact@wearesignalzero.tech" className="text-slate-500 hover:text-blue-600 dark:text-gray-500 dark:hover:text-[var(--accent-primary)] transition-colors"><Mail className="w-4 h-4" /></a>
+              <a href="https://www.linkedin.com/in/eppa-sai-vardhan-reddy-5b71213a4" className="text-slate-500 hover:text-blue-600 dark:text-gray-500 dark:hover:text-[var(--accent-primary)] transition-colors"><Linkedin className="w-4 h-4" /></a>
+              <a href="#" className="text-slate-500 hover:text-blue-600 dark:text-gray-500 dark:hover:text-[var(--accent-primary)] transition-colors"><Globe className="w-4 h-4" /></a>
             </div>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4 tracking-wide">SERVICES</h4>
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">SERVICES</h4>
             <ul className="space-y-2.5">
               {SERVICES.map(s => (
-                <li key={s.id}><a href="#services" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">{s.title}</a></li>
+                <li key={s.id}><a href="#services" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">{s.title}</a></li>
               ))}
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4 tracking-wide">COMPANY</h4>
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4 tracking-wide">COMPANY</h4>
             <ul className="space-y-2.5">
-              <li><a href="#case-studies" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">Case Studies</a></li>
-              <li><a href="#founder" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">About the Founder</a></li>
-              <li><a href="#discovery" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">Start a Project</a></li>
-              <li><button className="text-sm text-gray-500 hover:text-gray-300 transition-colors">Privacy Policy</button></li>
-              <li><button className="text-sm text-gray-500 hover:text-gray-300 transition-colors">Impressum</button></li>
+              <li><a href="#case-studies" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Case Studies</a></li>
+              <li><a href="#founder" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">About the Founder</a></li>
+              <li><a href="#discovery" className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Start a Project</a></li>
+              <li><button className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Privacy Policy</button></li>
+              <li><button className="text-sm text-slate-600 hover:text-blue-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">Impressum</button></li>
             </ul>
           </div>
         </div>
-        <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-600">&copy; {new Date().getFullYear()} Signal Zero. All rights reserved.</p>
-          <p className="text-xs text-gray-600">Hyderabad, India</p>
+        <div className="pt-8 border-t border-slate-200 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-slate-500 dark:text-gray-600">&copy; {new Date().getFullYear()} Signal Zero. All rights reserved.</p>
+          <p className="text-xs text-slate-500 dark:text-gray-600">Hyderabad, India</p>
         </div>
       </div>
     </footer>
@@ -2784,18 +2816,18 @@ function Footer() {
 // ===== HOME PAGE =====
 export default function Home() {
   return (
-    <main className="bg-[#030303] text-white min-h-screen overflow-x-hidden relative">
+    <main className="bg-[#F8FAFC] dark:bg-[#030303] text-slate-900 dark:text-white min-h-screen overflow-x-hidden relative transition-colors duration-300">
       {/* 2% Noise Texture Overlay */}
       <div 
-        className="fixed inset-0 z-50 pointer-events-none opacity-[0.02]" 
+        className="fixed inset-0 z-50 pointer-events-none opacity-[0.015] dark:opacity-[0.02]" 
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
       <div className="relative flex flex-col min-h-safe w-full pb-safe">
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#030303] via-[#050505] to-[#030303]" />
-          <div className="absolute top-1/2 left-[40%] -translate-x-1/2 -translate-y-1/2 w-[clamp(20rem,50vw,56rem)] aspect-square bg-[var(--accent-glow)] rounded-full opacity-[0.035] blur-[150px] mix-blend-screen" />
-          <div className="absolute top-1/4 right-1/4 w-[clamp(15rem,30vw,31rem)] aspect-square bg-[#60efff] rounded-full opacity-[0.045] blur-[120px] mix-blend-screen" />
-          <div className="absolute bottom-1/4 left-1/3 w-[clamp(12rem,25vw,25rem)] aspect-square bg-[var(--accent-glow)] rounded-full opacity-[0.025] blur-[100px] mix-blend-screen" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC] via-[#F1F5F9] to-[#F8FAFC] dark:from-[#030303] dark:via-[#050505] dark:to-[#030303] transition-colors duration-500" />
+          <div className="absolute top-1/2 left-[40%] -translate-x-1/2 -translate-y-1/2 w-[clamp(20rem,50vw,56rem)] aspect-square bg-blue-400/10 dark:bg-[var(--accent-glow)] rounded-full opacity-[0.06] dark:opacity-[0.035] blur-[150px] mix-blend-multiply dark:mix-blend-screen transition-opacity duration-500" />
+          <div className="absolute top-1/4 right-1/4 w-[clamp(15rem,30vw,31rem)] aspect-square bg-sky-400/10 dark:bg-[#60efff] rounded-full opacity-[0.06] dark:opacity-[0.045] blur-[120px] mix-blend-multiply dark:mix-blend-screen transition-opacity duration-500" />
+          <div className="absolute bottom-1/4 left-1/3 w-[clamp(12rem,25vw,25rem)] aspect-square bg-indigo-400/10 dark:bg-[var(--accent-glow)] rounded-full opacity-[0.05] dark:opacity-[0.025] blur-[100px] mix-blend-multiply dark:mix-blend-screen transition-opacity duration-500" />
           <SignalWaveCanvas />
         </div>
         <Navigation />
