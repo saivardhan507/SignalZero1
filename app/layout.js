@@ -76,6 +76,15 @@ export const metadata = {
   verification: {
     google: 'wTTahPudOh-Z405wtC4NuMnGLQgMoXni9z2cY9f0dgo',
   },
+  icons: {
+    icon: [
+      { url: '/signal-zero-logo.svg', type: 'image/svg+xml' },
+      { url: '/signal-zero-logo-300x300.png', sizes: '300x300', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/signal-zero-logo-300x300.png', sizes: '300x300', type: 'image/png' },
+    ],
+  },
 };
 
 export const viewport = {
